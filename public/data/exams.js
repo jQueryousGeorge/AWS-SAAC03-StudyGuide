@@ -2,7 +2,7 @@ function q(s, prompt, choices, answer, why) {
   return { s, q: prompt, c: choices, a: answer, why };
 }
 
-window.EXAMS = {
+export const exams = {
   a: {
     title: "Exam A - Core Architecture Pass",
     questions: [
