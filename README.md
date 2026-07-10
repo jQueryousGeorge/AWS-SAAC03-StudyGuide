@@ -6,7 +6,7 @@ An interactive Node.js study site for AWS Certified Solutions Architect - Associ
 
 - Multi-page study app with clean URLs
 - Dashboard/welcome page with a 3-tier AWS architecture visual
-- Master summary page for Sections 1-9
+- Summary hub for Sections 1-9, with quick links and cross-section exam traps
 - Individual section pages for focused review
 - 120 flip-to-reveal flashcards with section filtering and shuffle
 - Exam center with two 65-question practice exams
@@ -19,7 +19,7 @@ An interactive Node.js study site for AWS Certified Solutions Architect - Associ
 | Route | Purpose |
 | --- | --- |
 | `/` | Study dashboard and architecture overview |
-| `/summary` | Sections 1-9 summary and rapid-fire exam traps |
+| `/summary` | Summary hub with Sections 1-9 cards and rapid-fire exam traps |
 | `/section/1` - `/section/9` | Detailed section study pages |
 | `/flashcards` | Flashcard drill mode with filtering and shuffle |
 | `/exam` | Exam center landing page |
@@ -104,6 +104,13 @@ The study content is built from a local AWS SAA-C03 course summary and supportin
 public/content/aws-saa-sections-1-9-master-summary.md
 ```
 
+In the app, the source file is not shown as one long page. It is split into two study surfaces:
+
+- `/summary` is the summary hub. It shows the Sections 1-9 overview cards and the cross-section exam traps recap.
+- `/section/1` through `/section/9` contain the detailed notes from the master summary document for each section.
+
+So when this README says "summary," it means the `/summary` route as the starting hub, not a separate hidden page.
+
 The flashcard bank is defined in:
 
 ```text
@@ -148,8 +155,8 @@ curl -I http://127.0.0.1:5173/flashcards
 
 Recommended usage:
 
-1. Start at `/summary` to review the big picture.
-2. Use `/section/1` through `/section/9` to drill weak areas.
+1. Start at `/summary` to review the section map and rapid-fire exam traps.
+2. Use `/section/1` through `/section/9` for the detailed notes from the master summary document.
 3. Use `/flashcards` with section filters for repetition.
 4. Shuffle the flashcard deck for mixed recall.
 5. Take `/exam/a`, review explanations, then take `/exam/b`.
