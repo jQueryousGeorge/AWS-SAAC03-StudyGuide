@@ -87,7 +87,6 @@ npm start
 ├── server.js
 ├── public
 │   ├── app.js
-│   ├── exam-data.js
 │   ├── index.html
 │   ├── styles.css
 │   ├── assets
@@ -95,8 +94,22 @@ npm start
 │   │   ├── ebs_vs_instanceStore.png
 │   │   ├── iam-roles-entity-types.png
 │   │   └── route53-vs-elb-failover-simulator.html
-│   └── content
-│       └── aws-saa-sections-1-9-master-summary.md
+│   ├── content
+│   │   └── aws-saa-sections-1-9-master-summary.md
+│   ├── data
+│   │   ├── exams.js
+│   │   ├── sections.js
+│   │   └── visuals.js
+│   ├── lib
+│   │   ├── markdown.js
+│   │   └── render.js
+│   └── pages
+│       ├── exams.js
+│       ├── flashcards.js
+│       ├── home.js
+│       ├── sections.js
+│       ├── summary.js
+│       └── visuals.js
 └── README.md
 ```
 
@@ -115,16 +128,34 @@ In the app, the source file is not shown as one long page. It is split into two 
 
 So when this README says "summary," it means the `/summary` route as the starting hub, not a separate hidden page.
 
-The flashcard bank is defined in:
+The app shell and router live in:
 
 ```text
 public/app.js
 ```
 
+The flashcard and section metadata are defined in:
+
+```text
+public/data/sections.js
+```
+
 The practice exams are defined in:
 
 ```text
-public/exam-data.js
+public/data/exams.js
+```
+
+The visual study cards are defined in:
+
+```text
+public/data/visuals.js
+```
+
+Route-specific rendering lives in:
+
+```text
+public/pages/
 ```
 
 ## Safety Notes

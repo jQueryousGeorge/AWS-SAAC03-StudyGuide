@@ -1,0 +1,55 @@
+import { link, setTitle } from "../lib/render.js";
+
+export function renderHome({ app, pageTitle, sectionMeta }) {
+  setTitle(pageTitle, "Study Console");
+  app.innerHTML = `
+    <div class="hero">
+      <div class="hero-copy">
+        <h2>AWS architecture practice that feels like using a control room.</h2>
+        <p>This site turns your Sections 1-9 master summary into a navigable study system: quick review, section deep dives, flip cards, visual references, and two 65-question practice exams.</p>
+        <div class="hero-actions">
+          ${link("/summary", "Open Summary")}
+          ${link("/visuals", "Study Visuals", "button secondary")}
+          ${link("/flashcards", "Drill Flashcards", "button secondary")}
+          ${link("/exam", "Go to Exams", "button secondary")}
+        </div>
+      </div>
+      <div class="architecture-board" aria-label="AWS 3-tier architecture visual">
+        <div class="layer">
+          <div class="layer-label">DNS</div>
+          <div class="nodes"><div class="node accent">Route 53<small>Alias, health checks, routing policy</small></div></div>
+        </div>
+        <div class="layer">
+          <div class="layer-label">Public</div>
+          <div class="nodes">
+            <div class="node accent">ALB<small>HTTP/S, paths, hostnames</small></div>
+            <div class="node accent">NLB<small>Static IP, TCP/UDP</small></div>
+            <div class="node accent">CloudFront<small>Edge delivery</small></div>
+          </div>
+        </div>
+        <div class="layer">
+          <div class="layer-label">Private</div>
+          <div class="nodes">
+            <div class="node">ASG AZ-a<small>EC2 app tier</small></div>
+            <div class="node">ASG AZ-b<small>EC2 app tier</small></div>
+            <div class="node">ASG AZ-c<small>EC2 app tier</small></div>
+          </div>
+        </div>
+        <div class="layer">
+          <div class="layer-label">Data</div>
+          <div class="nodes">
+            <div class="node data">RDS/Aurora<small>Source of truth</small></div>
+            <div class="node data">ElastiCache<small>Sessions and reads</small></div>
+            <div class="node data">EFS<small>Shared Linux files</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid three">
+      <div class="card stat"><span class="muted">Study sections</span><strong>9</strong><span>From global infrastructure through Beanstalk.</span></div>
+      <div class="card stat"><span class="muted">Visual simulators</span><strong>2</strong><span>Failover behavior and capacity cost planning.</span></div>
+      <div class="card stat"><span class="muted">Flashcards</span><strong>${sectionMeta.reduce((sum, s) => sum + s.cards.length, 0)}</strong><span>Focused on exam traps and decision triggers.</span></div>
+      <div class="card stat"><span class="muted">Practice exams</span><strong>130</strong><span>Two 65-question exams with review mode.</span></div>
+    </div>
+  `;
+}
