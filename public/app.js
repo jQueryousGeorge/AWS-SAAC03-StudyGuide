@@ -11,7 +11,10 @@ const state = {
   graded: false,
   flashIndex: 0,
   flashFlipped: false,
-  flashSection: 0
+  flashSection: 0,
+  flashShuffled: false,
+  flashOrderKey: "",
+  flashOrder: []
 };
 
 const sectionMeta = [
@@ -142,6 +145,106 @@ const sectionMeta = [
     ]
   }
 ];
+
+const additionalFlashcards = {
+  1: [
+    ["What is the difference between a Region and an AZ?", "A Region is a geographic AWS area; an AZ is an isolated data center group inside that Region."],
+    ["When should you choose multi-Region instead of only multi-AZ?", "Use multi-Region for disaster recovery beyond a Region, global latency needs, or strict geographic failover requirements."],
+    ["Why can AZ names differ between AWS accounts?", "AWS maps names like us-east-1a independently per account; use AZ IDs when consistent physical AZ identity matters."],
+    ["Which global infrastructure choice most directly affects data residency?", "The AWS Region where the data is stored and processed."],
+    ["What exam phrase points toward edge services?", "Global users need lower latency, content delivery, or acceleration close to users."],
+    ["Why are most AWS architectures designed across at least two AZs?", "To remove a single-AZ failure as a single point of failure."],
+    ["What should you assume about a service if you do not know its scope?", "Assume it is Regional unless it is a known global service."]
+  ],
+  2: [
+    ["What is the shared responsibility model trap for IAM?", "AWS secures the cloud infrastructure; you secure identities, policies, credentials, and access decisions in your account."],
+    ["What is STS used for?", "AWS Security Token Service issues temporary credentials, usually through role assumption or federation."],
+    ["What is role switching commonly used for?", "Cross-account access without creating long-lived users in every account."],
+    ["What is the difference between identity-based and resource-based policies?", "Identity policies attach to IAM identities; resource policies attach to resources and can name principals."],
+    ["What service is used for workforce single sign-on across AWS accounts?", "AWS IAM Identity Center."],
+    ["When should Secrets Manager be preferred over hardcoded configuration?", "When applications need managed storage, retrieval, and rotation of secrets such as database passwords."],
+    ["What is an SCP in AWS Organizations?", "A Service Control Policy sets maximum allowed permissions for accounts or organizational units."],
+    ["What does an explicit Deny do in IAM policy evaluation?", "It overrides Allows."],
+    ["What is the safest answer when a person or workload only needs one service action?", "Grant least privilege for only that required action and resource scope."]
+  ],
+  3: [
+    ["Which EC2 instance family fits balanced web servers?", "General purpose families such as t and m."],
+    ["Which instance family is usually best for high sequential local disk I/O?", "Storage optimized families such as i, d, and h."],
+    ["Why should a security group reference another security group?", "It allows tier-to-tier access without hardcoding changing instance IPs."],
+    ["What is the default outbound behavior of a security group?", "All outbound traffic is allowed by default."],
+    ["What is a Launch Template used for?", "It defines instance configuration for launches, including AMI, type, user data, storage, security groups, and IAM role."],
+    ["Which pricing option is best for short, unpredictable, uninterrupted workloads?", "On-Demand Instances."],
+    ["Which purchasing option is strongest for BYOL and physical host visibility?", "Dedicated Hosts."],
+    ["What is the 2-minute Spot interruption notice used for?", "Graceful shutdown, checkpointing, or draining work before interruption."]
+  ],
+  4: [
+    ["Why does AWS recommend avoiding Elastic IPs when possible?", "They often indicate brittle architecture; DNS and load balancers are usually better abstractions."],
+    ["What is the best public entry point for private EC2 instances in a web tier?", "A public load balancer with EC2 instances in private subnets."],
+    ["Which placement group strategy spreads across separate racks but supports hundreds of instances?", "Partition placement groups."],
+    ["What can move with an ENI during failover?", "Private IPs, associated Elastic IP mappings, MAC address, and security group associations."],
+    ["Can an ENI move across Availability Zones?", "No. ENIs are bound to an AZ."],
+    ["What happens to instance store data when the underlying host fails?", "The data is lost."],
+    ["What workload benefits from EC2 hibernate?", "A long-running or slow-starting workload that benefits from preserving RAM state."]
+  ],
+  5: [
+    ["Which storage type is object storage?", "Amazon S3."],
+    ["Which storage type is block storage?", "Amazon EBS."],
+    ["Which storage type is managed shared file storage for Linux?", "Amazon EFS."],
+    ["What is the main cost risk with EBS?", "You pay for provisioned capacity and performance whether the app uses all of it or not."],
+    ["Which EBS type should you avoid for boot volumes?", "HDD-backed st1 and sc1 cannot be boot volumes."],
+    ["What does EFS lifecycle management do?", "Moves files to lower-cost storage classes after configured periods without access."],
+    ["When is EFS Max I/O performance mode appropriate?", "Highly parallel workloads that need more aggregate throughput and can tolerate higher latency."],
+    ["What is Fast Snapshot Restore for?", "Avoiding first-use latency when creating volumes from snapshots."],
+    ["What is the exam trap with RDS and binary files?", "RDS is for relational data, not storing large files, uploads, or software packages."]
+  ],
+  6: [
+    ["Which load balancer is Layer 7?", "Application Load Balancer."],
+    ["Which load balancer is Layer 4?", "Network Load Balancer."],
+    ["Which load balancer works at Layer 3 for appliance traffic?", "Gateway Load Balancer."],
+    ["Which load balancer is best for WebSocket and HTTP/2 routing?", "Application Load Balancer."],
+    ["Which load balancer should you choose for UDP traffic?", "Network Load Balancer."],
+    ["What is the main downside of sticky sessions?", "They can create load imbalance and keep state tied to individual targets."],
+    ["What ASG metric is often better than CPU for web workloads behind an ALB?", "RequestCountPerTarget."],
+    ["What does an ASG do when an instance fails health checks?", "It can terminate and replace the unhealthy instance."],
+    ["What deployment speed pattern helps ASG scale-out become useful faster?", "Use a Golden AMI so instances boot with dependencies already installed."]
+  ],
+  7: [
+    ["What is the key replication difference between Multi-AZ and Read Replicas?", "Multi-AZ is synchronous standby replication; Read Replicas are asynchronous."],
+    ["What is the purpose of an Aurora reader endpoint?", "Connection-level load balancing across Aurora replicas."],
+    ["When is Aurora Serverless a strong answer?", "Infrequent, intermittent, or unpredictable database workloads with no capacity planning."],
+    ["What does Aurora Global Database optimize for?", "Low-latency global reads and cross-Region disaster recovery with fast promotion."],
+    ["What is Aurora cloning best for?", "Creating fast, low-cost staging or test copies through copy-on-write."],
+    ["Which service stores database credentials for RDS Proxy?", "AWS Secrets Manager."],
+    ["Why does ElastiCache require app changes?", "The application must implement cache reads, writes, invalidation, and fallback behavior."],
+    ["Which ElastiCache engine supports Multi-AZ with auto failover?", "Redis."],
+    ["Which ElastiCache engine is multi-threaded and sharded but not highly available by design?", "Memcached."],
+    ["Which pattern makes the app tier stateless for login sessions?", "Store session data in ElastiCache or DynamoDB and keep only a session ID in the cookie."]
+  ],
+  8: [
+    ["What does an Alias record cost in Route 53?", "Alias queries to AWS resources are free."],
+    ["Who sets TTL for Alias records?", "AWS sets the TTL for the target; you do not configure it directly."],
+    ["Which routing policy should you use for blue/green or canary DNS response splitting?", "Weighted routing."],
+    ["Which routing policy chooses the lowest-latency AWS Region for the user?", "Latency-based routing."],
+    ["Which routing policy should include a default record for unmatched users?", "Geolocation routing."],
+    ["What percentage of Route 53 health checkers must report healthy?", "More than 18% of global health checkers."],
+    ["What response codes are healthy for HTTP/HTTPS Route 53 endpoint checks?", "2xx and 3xx responses."],
+    ["Why is Multi-Value routing not a load balancer replacement?", "It returns DNS answers only; it does not provide full load balancer health, routing, or connection behavior."]
+  ],
+  9: [
+    ["What service provides loose coupling between producers and consumers?", "Amazon SQS for queues, or Amazon SNS/EventBridge for pub/sub and event routing patterns."],
+    ["When is SQS better than direct synchronous calls?", "When components should buffer work and scale independently."],
+    ["What is the classic fix for one slow synchronous workflow in a web app?", "Move the work to an asynchronous queue and process it with workers."],
+    ["What Beanstalk tier scales based on queue depth?", "Worker Environment."],
+    ["What is immutable infrastructure?", "Replacing instances or environments with newly built versions instead of patching them in place."],
+    ["What is the pilot light DR strategy?", "Keep minimal core infrastructure running in another Region and scale it up during disaster."],
+    ["What is warm standby DR?", "Keep a scaled-down functional environment running in another Region and scale it during failover."],
+    ["What is active-active DR?", "Run production traffic in multiple locations at the same time."]
+  ]
+};
+
+sectionMeta.forEach((section) => {
+  section.cards.push(...(additionalFlashcards[section.id] || []));
+});
 
 function escapeHtml(value) {
   return String(value)
@@ -428,6 +531,26 @@ function flashcardsFor(sectionId) {
     .flatMap((section) => section.cards.map((card) => ({ section, q: card[0], a: card[1] })));
 }
 
+function shuffledIndexes(length) {
+  const indexes = Array.from({ length }, (_, index) => index);
+  for (let i = indexes.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+  }
+  return indexes;
+}
+
+function orderedFlashcards(sectionId) {
+  const cards = flashcardsFor(sectionId);
+  const key = `${sectionId}:${cards.length}`;
+  if (!state.flashShuffled || state.flashOrderKey !== key || state.flashOrder.length !== cards.length) {
+    state.flashOrderKey = key;
+    state.flashOrder = Array.from({ length: cards.length }, (_, index) => index);
+    return cards;
+  }
+  return state.flashOrder.map((index) => cards[index]);
+}
+
 function renderFlashcards() {
   const params = new URLSearchParams(location.search);
   const selected = Number(params.get("section") || 0);
@@ -435,8 +558,11 @@ function renderFlashcards() {
     state.flashSection = selected;
     state.flashIndex = 0;
     state.flashFlipped = false;
+    state.flashShuffled = false;
+    state.flashOrderKey = "";
+    state.flashOrder = [];
   }
-  const cards = flashcardsFor(selected);
+  const cards = orderedFlashcards(selected);
   state.flashIndex = Math.min(state.flashIndex, Math.max(cards.length - 1, 0));
   const current = cards[state.flashIndex];
   setTitle("Flashcards");
@@ -444,12 +570,15 @@ function renderFlashcards() {
     <div class="toolbar">
       <div>
         <h2>Flip-to-reveal review</h2>
-        <p class="muted">Filter by section when you want focused reps.</p>
+        <p class="muted">Filter by section when you want focused reps. Shuffle randomizes the current set.</p>
       </div>
-      <select id="sectionFilter" aria-label="Choose section">
-        <option value="0">All sections</option>
-        ${sectionMeta.map((section) => `<option value="${section.id}" ${section.id === selected ? "selected" : ""}>${section.id}. ${section.title}</option>`).join("")}
-      </select>
+      <div class="flash-toolbar-actions">
+        <select id="sectionFilter" aria-label="Choose section">
+          <option value="0">All sections</option>
+          ${sectionMeta.map((section) => `<option value="${section.id}" ${section.id === selected ? "selected" : ""}>${section.id}. ${section.title}</option>`).join("")}
+        </select>
+        <button class="button secondary" id="shuffleCards" type="button">${state.flashShuffled ? "Shuffle Again" : "Shuffle"}</button>
+      </div>
     </div>
     <div class="flash-study">
       <section class="flash-stage" aria-live="polite">
@@ -492,6 +621,14 @@ function renderFlashcards() {
   document.querySelector("#sectionFilter").addEventListener("change", (event) => {
     const value = Number(event.target.value);
     navigate(value ? `/flashcards?section=${value}` : "/flashcards");
+  });
+  document.querySelector("#shuffleCards").addEventListener("click", () => {
+    state.flashShuffled = true;
+    state.flashOrderKey = `${selected}:${cards.length}`;
+    state.flashOrder = shuffledIndexes(cards.length);
+    state.flashIndex = 0;
+    state.flashFlipped = false;
+    renderFlashcards();
   });
   document.querySelector("#focusCard").addEventListener("click", () => {
     state.flashFlipped = !state.flashFlipped;

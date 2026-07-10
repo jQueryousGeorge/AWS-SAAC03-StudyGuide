@@ -418,6 +418,13 @@ select {
   padding: 10px 12px;
 }
 
+.flash-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .flash-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -778,6 +785,12 @@ select {
 
   .flash-list {
     max-height: none;
+  }
+
+  .flash-toolbar-actions,
+  .flash-toolbar-actions select,
+  .flash-toolbar-actions .button {
+    width: 100%;
   }
 }
 
