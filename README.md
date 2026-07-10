@@ -46,7 +46,8 @@ The app has been developed with Node.js `v26.5.0`, but it only uses standard Nod
 Clone the repo:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/jQueryousGeorge/AWS-SAAC03-StudyGuide.git
+
 cd AWS-Study-Website
 ```
 
