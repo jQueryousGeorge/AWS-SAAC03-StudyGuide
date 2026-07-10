@@ -8,7 +8,10 @@ const state = {
   markdown: "",
   sections: [],
   answers: {},
-  graded: false
+  graded: false,
+  flashIndex: 0,
+  flashFlipped: false,
+  flashSection: 0
 };
 
 const sectionMeta = [
@@ -372,9 +375,15 @@ function renderSummary() {
     <div class="study-panel" style="margin-top:18px">
       <div class="markdown">${markdownToHtml(traps)}</div>
     </div>
-    <div class="asset-strip">
-      <img src="/assets/iam-roles-entity-types.png" alt="IAM roles and entity types diagram">
-      <img src="/assets/ebs_vs_instanceStore.png" alt="EBS versus instance store comparison">
+    <div class="asset-strip" aria-label="Reference images">
+      <a class="asset-card" href="/assets/iam-roles-entity-types.png" target="_blank" rel="noopener">
+        <img src="/assets/iam-roles-entity-types.png" alt="IAM roles and entity types diagram">
+        <span><strong>IAM entity map</strong><small>Open full-size diagram</small></span>
+      </a>
+      <a class="asset-card" href="/assets/ebs_vs_instanceStore.png" target="_blank" rel="noopener">
+        <img src="/assets/ebs_vs_instanceStore.png" alt="EBS versus instance store comparison">
+        <span><strong>EBS vs Instance Store</strong><small>Open full-size diagram</small></span>
+      </a>
     </div>
   `;
 }
@@ -422,7 +431,14 @@ function flashcardsFor(sectionId) {
 function renderFlashcards() {
   const params = new URLSearchParams(location.search);
   const selected = Number(params.get("section") || 0);
+  if (selected !== state.flashSection) {
+    state.flashSection = selected;
+    state.flashIndex = 0;
+    state.flashFlipped = false;
+  }
   const cards = flashcardsFor(selected);
+  state.flashIndex = Math.min(state.flashIndex, Math.max(cards.length - 1, 0));
+  const current = cards[state.flashIndex];
   setTitle("Flashcards");
   app.innerHTML = `
     <div class="toolbar">
@@ -435,23 +451,41 @@ function renderFlashcards() {
         ${sectionMeta.map((section) => `<option value="${section.id}" ${section.id === selected ? "selected" : ""}>${section.id}. ${section.title}</option>`).join("")}
       </select>
     </div>
-    <div class="flash-grid">
-      ${cards.map((card) => `
-        <button class="flashcard" type="button">
-          <span class="flash-inner">
-            <span class="flash-face">
-              <span class="flash-label">Section ${card.section.id} question</span>
-              <strong>${card.q}</strong>
-              <span class="muted">Click to reveal</span>
+    <div class="flash-study">
+      <section class="flash-stage" aria-live="polite">
+        <div class="flash-counter">
+          <span class="tag">Section ${current.section.id}</span>
+          <strong>${state.flashIndex + 1} / ${cards.length}</strong>
+        </div>
+        <button class="flash-focus-card ${state.flashFlipped ? "flipped" : ""}" id="focusCard" type="button" aria-pressed="${state.flashFlipped}">
+          <span class="flash-focus-inner">
+            <span class="flash-focus-face">
+              <span class="flash-label">Question</span>
+              <strong>${current.q}</strong>
+              <span class="muted">${current.section.title}</span>
             </span>
-            <span class="flash-face flash-back">
+            <span class="flash-focus-face flash-focus-back">
               <span class="flash-label">Answer</span>
-              <strong>${card.a}</strong>
-              <span class="muted">${card.section.title}</span>
+              <strong>${current.a}</strong>
+              <span class="muted">${current.section.title}</span>
             </span>
           </span>
         </button>
-      `).join("")}
+        <div class="flash-controls">
+          <button class="icon-button" id="prevCard" type="button" aria-label="Previous flashcard">‹</button>
+          <button class="button" id="flipCard" type="button">${state.flashFlipped ? "Show Question" : "Reveal Answer"}</button>
+          <button class="icon-button" id="nextCard" type="button" aria-label="Next flashcard">›</button>
+        </div>
+      </section>
+      <aside class="flash-list" aria-label="Flashcard list">
+        ${cards.map((card, index) => `
+          <button class="flash-list-item ${index === state.flashIndex ? "active" : ""}" type="button" data-card-index="${index}">
+            <span>${index + 1}</span>
+            <strong>${card.q}</strong>
+            <small>Section ${card.section.id}</small>
+          </button>
+        `).join("")}
+      </aside>
     </div>
   `;
 
@@ -459,8 +493,30 @@ function renderFlashcards() {
     const value = Number(event.target.value);
     navigate(value ? `/flashcards?section=${value}` : "/flashcards");
   });
-  document.querySelectorAll(".flashcard").forEach((card) => {
-    card.addEventListener("click", () => card.classList.toggle("flipped"));
+  document.querySelector("#focusCard").addEventListener("click", () => {
+    state.flashFlipped = !state.flashFlipped;
+    renderFlashcards();
+  });
+  document.querySelector("#flipCard").addEventListener("click", () => {
+    state.flashFlipped = !state.flashFlipped;
+    renderFlashcards();
+  });
+  document.querySelector("#prevCard").addEventListener("click", () => {
+    state.flashIndex = (state.flashIndex - 1 + cards.length) % cards.length;
+    state.flashFlipped = false;
+    renderFlashcards();
+  });
+  document.querySelector("#nextCard").addEventListener("click", () => {
+    state.flashIndex = (state.flashIndex + 1) % cards.length;
+    state.flashFlipped = false;
+    renderFlashcards();
+  });
+  document.querySelectorAll("[data-card-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.flashIndex = Number(button.dataset.cardIndex);
+      state.flashFlipped = false;
+      renderFlashcards();
+    });
   });
 }
 
@@ -588,7 +644,7 @@ function navigate(path) {
   history.pushState(null, "", path);
   renderRoute();
   document.body.classList.remove("nav-open");
-  window.scrollTo({ top: 0, behavior: "instant" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function renderRoute() {
