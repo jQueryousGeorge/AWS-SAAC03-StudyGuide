@@ -1,22 +1,22 @@
 export const visualStudies = [
   {
     id: "failover",
-    title: "Route 53 vs ELB Failover",
-    subtitle: "DNS answers compared with active request proxying",
+    title: "Route 53 vs Elastic Load Balancing Failover",
+    subtitle: "Domain Name System answers compared with Elastic Load Balancing request proxying",
     asset: "/assets/route53-vs-elb-failover-simulator.html",
     sections: [6, 8, 9],
     summary:
-      "This simulator contrasts DNS-based failover with load balancer failover. Route 53 can stop returning an unhealthy endpoint after health checks update DNS, but clients may keep using cached answers until TTL expires. On the other hand, an ELB sits in the request path and can route new traffic away from unhealthy targets as soon as its health checks mark them out of service.",
+      "This simulator contrasts DNS-based failover with load balancer failover. Route 53 can stop returning an unhealthy endpoint after health checks update DNS, but clients may keep using cached answers until the TTL, or Time To Live, expires. On the other hand, ELB, or Elastic Load Balancing, sits in the request path and can route new traffic away from unhealthy targets as soon as its health checks mark them out of service.",
     takeaways: [
       "Route 53 routing policies choose DNS answers; they do not proxy traffic.",
-      "DNS failover is affected by health check timing and resolver/client TTL caching.",
-      "ELB health checks operate at the target group or load balancer layer and remove unhealthy targets from active routing.",
-      "Use Route 53 for DNS-level decisions such as regional failover; use ELB for application-tier target health and traffic distribution.",
-      "Exam trigger: stale DNS cache or users still hitting a dead IP points to TTL behavior, not ELB behavior."
+      "DNS failover is affected by health check timing and resolver/client Time To Live caching.",
+      "Elastic Load Balancing health checks operate at the target group or load balancer layer and remove unhealthy targets from active routing.",
+      "Use Route 53 for DNS-level decisions such as regional failover; use Elastic Load Balancing for application-tier target health and traffic distribution.",
+      "Exam trigger: stale DNS cache or users still hitting a dead IP points to TTL, or Time To Live, behavior, not load balancer behavior."
     ],
     prompts: [
-      "Lower the Route 53 TTL, fail the primary, and watch how long failed traffic continues.",
-      "Fail an ELB node and compare how quickly new packets avoid the unhealthy backend."
+      "Lower the Route 53 TTL, or Time To Live, fail the primary, and watch how long failed traffic continues.",
+      "Fail an Elastic Load Balancer node and compare how quickly new packets avoid the unhealthy backend."
     ]
   },
   {

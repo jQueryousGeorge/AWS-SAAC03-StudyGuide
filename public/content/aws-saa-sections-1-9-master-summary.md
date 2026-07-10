@@ -6,7 +6,7 @@
 
 ## Section 1 — Getting Started with AWS (Global Infrastructure)
 
-**The mental model:** AWS is a hierarchy of blast radiuses. Region > AZ > Data Center. The exam constantly tests whether you know *what scope a resource lives at* — because that determines how you achieve high availability and how you move things around.
+**The mental model:** AWS is a hierarchy of blast radiuses. Region > Availability Zone (AZ) > Data Center. The exam constantly tests whether you know *what scope a resource lives at* — because that determines how you achieve high availability and how you move things around.
 
 - **Region** = a cluster of data centers (e.g., `us-east-1`, `eu-west-3`). Most AWS services are **region-scoped**.
 - **Choosing a Region — 4 factors (know all 4):**
@@ -16,7 +16,7 @@
   4. **Pricing** — varies region to region.
 - **Availability Zone (AZ)** = one or more discrete data centers with redundant power, networking, connectivity. Usually 3 per region (min 3, max 6). Isolated from each other's disasters, but connected with **high-bandwidth, ultra-low-latency networking**. Named like `ap-southeast-2a`.
 - **Edge Locations / Points of Presence** = 400+ locations in 90+ cities. Not for running compute — for **delivering content close to users** (CloudFront, Global Accelerator).
-- **Global services** (not region-scoped): **IAM, Route 53, CloudFront, WAF**. Everything else you should assume is regional (EC2, Beanstalk, Lambda, Rekognition...).
+- **Global services** (not region-scoped): **IAM (Identity and Access Management), Route 53, CloudFront, WAF (Web Application Firewall)**. Everything else you should assume is regional (EC2, Beanstalk, Lambda, Rekognition...).
 
 > **Why it matters:** "Highly available" on the exam almost always means **multi-AZ**. "Disaster recovery / lowest latency for global users" means **multi-Region** or **edge**.
 
@@ -49,7 +49,7 @@
 
 ## Section 3 — Amazon EC2 (Basics)
 
-**The mental model:** EC2 = IaaS = the LEGO baseline of AWS: rent VMs (EC2) + virtual drives (EBS) + load distribution (ELB) + auto scaling (ASG). Everything in Section 9 is built from these four.
+**The mental model:** EC2 = IaaS = the LEGO baseline of AWS: rent virtual machines (EC2) + virtual drives (EBS, Elastic Block Store) + load distribution (ELB, Elastic Load Balancing) + auto scaling (ASG, Auto Scaling Groups). Everything in Section 9 is built from these four.
 
 ### Configuration & bootstrapping
 - You choose: OS (Linux/Windows/macOS), CPU, RAM, storage (**network-attached**: EBS & EFS / **hardware**: Instance Store), network card speed, public IP, firewall rules (**security group**), bootstrap script (**EC2 User Data**).
@@ -65,8 +65,8 @@
 ### Security Groups — the #1 practical topic
 - A **stateful firewall living outside the instance** — blocked traffic never reaches the EC2. Contain **allow rules only** (implicit deny for everything else inbound).
 - **Defaults: all inbound BLOCKED, all outbound ALLOWED.** Stateful = return traffic is automatically allowed both ways.
-- Locked to a **region/VPC combination**. One SG can attach to many instances; one instance can have many SGs.
-- **Rules can reference other security groups** — not just IPs. This is how tiers talk to each other cleanly (LB SG → EC2 SG → DB SG). Huge in Section 9.
+- Locked to a **region/VPC combination**. One SG (security group) can attach to many instances; one instance can have many SGs.
+- **Rules can reference other security groups** — not just IPs. This is how tiers talk to each other cleanly (load balancer SG → EC2 SG → database SG). Huge in Section 9.
 - **Troubleshooting heuristics (exam loves these):**
   - Connection **timeout** → security group issue.
   - **Connection refused** → app error / app not running (traffic got through).
@@ -119,7 +119,7 @@
 ### ENI — Elastic Network Interface
 - A logical **virtual network card** in a VPC. Attributes: primary private IPv4 (+ secondaries), one Elastic IP per private IPv4, one public IPv4, security groups, MAC address.
 - Created independently, attached/detached **on the fly** → **failover pattern:** move the ENI (with its private IP) from a failed instance to a standby, and traffic follows.
-- **Bound to an AZ.** Free while unattached.
+- **Bound to an Availability Zone (AZ).** Free while unattached.
 
 ### EC2 Hibernate
 - Stop = EBS data kept. Terminate = root EBS (by default) destroyed. Normal starts still pay OS-boot + app warm-up time.
@@ -131,13 +131,13 @@
 
 ## Section 5 — EC2 Instance Storage (EBS, AMI, Instance Store, EFS)
 
-**The mental model:** three storage personalities. **EBS** = one instance's private network drive (AZ-locked). **Instance Store** = raw speed, dies with the hardware. **EFS** = one shared filesystem for hundreds of Linux instances across AZs. The exam gives you a workload and expects you to pick the personality.
+**The mental model:** three storage personalities. **EBS (Elastic Block Store)** = one instance's private network drive (Availability-Zone-locked). **Instance Store** = raw speed, dies with the hardware. **EFS (Elastic File System)** = one shared filesystem for hundreds of Linux instances across Availability Zones. The exam gives you a workload and expects you to pick the personality.
 
 ### EBS — Elastic Block Store
 - **Network drive** ("network USB stick") → slight latency, but detach/reattach quickly. Persists after instance termination (configurable).
 - **Locked to one AZ.** To move across AZs/regions: **snapshot → copy → restore.** (Non-negotiable exam fact.)
 - One instance at a time (except Multi-Attach). Provisioned capacity (GB + IOPS) — **you pay for what you provision**, and can grow it over time.
-- **Delete on Termination:** root volume **deleted by default**; non-root volumes **kept by default**. Flip the attribute to preserve a root volume past termination (classic ASG scale-in data-preservation question).
+- **Delete on Termination:** root volume **deleted by default**; non-root volumes **kept by default**. Flip the attribute to preserve a root volume past termination (classic Auto Scaling Group scale-in data-preservation question).
 
 ### EBS Snapshots
 - Point-in-time backup; detaching first is recommended but not required. Copy across AZ **and** Region.
@@ -194,51 +194,51 @@
 
 ---
 
-## Section 6 — High Availability & Scalability (ELB + ASG)
+## Section 6 — High Availability & Scalability (Elastic Load Balancing + Auto Scaling Groups)
 
 ### Vocabulary first (the exam tests the distinctions)
 - **Vertical scaling** = bigger instance (scale up/down). Common for non-distributed systems — databases. RDS/ElastiCache scale vertically. Hardware-limited.
-- **Horizontal scaling (= elasticity)** = more instances (scale out/in). Implies distributed systems. ASG + ELB.
-- **High Availability** = surviving a data-center (AZ) loss → run across **≥ 2 AZs**. Can be **passive** (RDS Multi-AZ standby waits) or **active** (all nodes serving, horizontal scaling).
+- **Horizontal scaling (= elasticity)** = more instances (scale out/in). Implies distributed systems. ASG (Auto Scaling Groups) + ELB (Elastic Load Balancing).
+- **High Availability** = surviving a data-center or Availability Zone (AZ) loss → run across **≥ 2 AZs**. Can be **passive** (RDS Multi-AZ standby waits) or **active** (all nodes serving, horizontal scaling).
 
 ### Why a load balancer at all
-Single DNS point of access • spreads load • health checks + seamless failure handling • **SSL termination** • sticky sessions • cross-AZ HA • separates public from private traffic. ELB is **managed** (AWS handles upgrades/HA; fewer knobs, less effort than DIY) and integrates with EC2/ASG/ECS, ACM, CloudWatch, Route 53, WAF, Global Accelerator.
+Single DNS point of access • spreads load • health checks + seamless failure handling • **SSL termination** • sticky sessions • cross-AZ high availability • separates public from private traffic. ELB means **Elastic Load Balancing**: it is managed by AWS (AWS handles upgrades/high availability; fewer knobs, less effort than DIY) and integrates with EC2, Auto Scaling Groups, ECS, ACM, CloudWatch, Route 53, WAF, and Global Accelerator.
 
 **Health checks:** on a port + route (`/health`); non-200 = unhealthy. Defined **at the target-group level**.
 
 ### The four load balancers
 | LB | Layer | Protocols | Its "thing" |
 |---|---|---|---|
-| **CLB** (2009, v1, legacy) | 4 & 7 | HTTP/HTTPS/TCP/SSL | one SSL cert only; fixed hostname; avoid for new designs |
-| **ALB** (2016, v2) | **7** | HTTP/HTTPS/**WebSocket**, HTTP/2 | **routing rules**: URL path, hostname, query string, headers; HTTP→HTTPS redirects; **containers/microservices** (dynamic port mapping with ECS); one ALB replaces many CLBs |
-| **NLB** (2017, v2) | **4** | TCP/UDP/TLS | **millions of req/s, ultra-low latency**; **one static IP per AZ + Elastic IP support** (the "clients must whitelist an IP" answer) |
-| **GWLB** (2020) | **3** (IP) | GENEVE, **port 6081** | routes traffic *through* 3rd-party **network appliances** (firewalls, IDS/IPS, deep packet inspection): transparent gateway + load balancer in one |
+| **CLB — Classic Load Balancer** (2009, v1, legacy) | 4 & 7 | HTTP/HTTPS/TCP/SSL | one SSL cert only; fixed hostname; avoid for new designs |
+| **ALB — Application Load Balancer** (2016, v2) | **7** | HTTP/HTTPS/**WebSocket**, HTTP/2 | **routing rules**: URL path, hostname, query string, headers; HTTP→HTTPS redirects; **containers/microservices** (dynamic port mapping with ECS); one ALB replaces many CLBs |
+| **NLB — Network Load Balancer** (2017, v2) | **4** | TCP/UDP/TLS | **millions of req/s, ultra-low latency**; **one static IP per Availability Zone + Elastic IP support** (the "clients must whitelist an IP" answer) |
+| **GWLB — Gateway Load Balancer** (2020) | **3** (IP) | GENEVE, **port 6081** | routes traffic *through* 3rd-party **network appliances** (firewalls, IDS/IPS, deep packet inspection): transparent gateway + load balancer in one |
 
-- **ALB target groups:** EC2 instances, ECS tasks, **Lambda functions** (HTTP → JSON event), **private IPs**. ALB routes to multiple target groups.
-- **NLB target groups:** EC2, private IPs, **and an ALB** (NLB-in-front-of-ALB = static IP + L7 rules). NLB health checks support TCP/HTTP/HTTPS.
-- **GWLB target groups:** EC2, private IPs.
-- **ALB gotchas:** fixed hostname (`XXX.region.elb.amazonaws.com`) but **no static IP**; backends see the ALB's private IP — the client's true IP arrives in **`X-Forwarded-For`** (+ `X-Forwarded-Port` / `-Proto`).
+- **ALB target groups:** EC2 instances, ECS tasks, **Lambda functions** (HTTP → JSON event), **private IPs**. Application Load Balancers route to multiple target groups.
+- **NLB target groups:** EC2, private IPs, **and an ALB** (Network Load Balancer in front of an Application Load Balancer = static IP + Layer 7 rules). NLB health checks support TCP/HTTP/HTTPS.
+- **GWLB target groups:** EC2 and private IPs. Gateway Load Balancers are for routing through inspection appliances, not ordinary web routing.
+- **ALB gotchas:** fixed hostname (`XXX.region.elb.amazonaws.com`) but **no static IP**; backends see the Application Load Balancer's private IP — the client's true IP arrives in **`X-Forwarded-For`** (+ `X-Forwarded-Port` / `-Proto`).
 
 ### Sticky Sessions (Session Affinity)
-- Same client → same backend instance. Works on CLB, ALB, NLB. Use case: don't lose session data. Cost: **load imbalance**.
+- Same client → same backend instance. Works on Classic Load Balancer, Application Load Balancer, and Network Load Balancer. Use case: don't lose session data. Cost: **load imbalance**.
 - Cookie types (ALB): **application-based** — custom (generated by target, any attributes; name per target group; can't use reserved names `AWSALB`, `AWSALBAPP`, `AWSALBTG`) or application cookie (generated by LB, `AWSALBAPP`); **duration-based** — generated by LB (`AWSALB` on ALB, `AWSELB` on CLB), expiry you control.
 
 ### Cross-Zone Load Balancing (distributes evenly across ALL instances in ALL AZs, not just the node's own AZ)
-- **ALB: ON by default**, free inter-AZ. (Can disable per target group.)
-- **NLB & GWLB: OFF by default, $ for inter-AZ** if enabled.
-- **CLB: OFF by default**, free if enabled.
+- **ALB (Application Load Balancer): ON by default**, free inter-AZ. (Can disable per target group.)
+- **NLB (Network Load Balancer) & GWLB (Gateway Load Balancer): OFF by default, $ for inter-AZ** if enabled.
+- **CLB (Classic Load Balancer): OFF by default**, free if enabled.
 
 ### SSL/TLS
 - Cert on the LB = in-flight encryption; LB **terminates TLS** (decrypts) and talks plain HTTP to backends over the private VPC. Certs = X.509, managed via **ACM** (or upload your own). HTTPS listener needs a default cert; add more for multiple domains.
-- **SNI (Server Name Indication):** client names the target hostname in the TLS handshake → server picks the right cert → **multiple certs on one listener**. Works on **ALB, NLB, CloudFront. NOT CLB** (CLB = one cert; need multiple certs → multiple CLBs).
+- **SNI (Server Name Indication):** client names the target hostname in the TLS handshake → server picks the right cert → **multiple certs on one listener**. Works on **Application Load Balancer, Network Load Balancer, and CloudFront. NOT Classic Load Balancer** (CLB = one cert; need multiple certs → multiple CLBs).
 - Security policies exist to support legacy SSL/TLS clients.
 
 ### Connection Draining / Deregistration Delay
-- CLB calls it Connection Draining; ALB/NLB call it **Deregistration Delay**. In-flight requests get time to finish while an instance deregisters; no new requests sent to it. **1–3600s, default 300, 0 = off.** Short requests → set it low.
+- Classic Load Balancer calls it Connection Draining; Application Load Balancer and Network Load Balancer call it **Deregistration Delay**. In-flight requests get time to finish while an instance deregisters; no new requests sent to it. **1–3600s, default 300, 0 = off.** Short requests → set it low.
 
 ### Auto Scaling Groups
-- Goal: scale **out** on load up, **in** on load down; keep between **min / desired / max**; auto-register instances to the LB; **replace unhealthy instances** (ELB health checks can drive this). **ASG itself is free** — you pay for the instances.
-- **Launch Template** (Launch Configurations are deprecated): AMI + instance type, User Data, EBS, SGs, key pair, IAM role, network/subnets, LB info.
+- Goal: scale **out** on load up, **in** on load down; keep between **min / desired / max**; auto-register instances to the load balancer; **replace unhealthy instances** (Elastic Load Balancing health checks can drive this). **ASG, or Auto Scaling Group, itself is free** — you pay for the instances.
+- **Launch Template** (Launch Configurations are deprecated): AMI (Amazon Machine Image) + instance type, User Data, EBS (Elastic Block Store), security groups, key pair, IAM role, network/subnets, load balancer info.
 - Instances commonly flunk health checks for two reasons: security group misconfig, or a broken User Data bootstrap.
 - **Scaling policies:**
   - **Target Tracking** — "keep average CPU ≈ 40%" — simplest; auto-creates the CloudWatch alarms.
@@ -246,17 +246,17 @@ Single DNS point of access • spreads load • health checks + seamless failure
   - **Scheduled** — known patterns ("min 10 at 5pm Friday").
   - **Predictive** — ML forecast, scales ahead of the load.
 - **Good scaling metrics:** `CPUUtilization`, `RequestCountPerTarget` (requests per instance stays stable), Average Network In/Out (network-bound apps), any custom CloudWatch metric.
-- **Cooldown:** after a scaling action, **default 300s** where the ASG won't launch/terminate (let metrics settle). Pro move: **use a ready-to-go (Golden) AMI** → instances serve faster → shorter effective cooldowns.
+- **Cooldown:** after a scaling action, **default 300s** where the Auto Scaling Group won't launch/terminate (let metrics settle). Pro move: **use a ready-to-go Golden AMI (Amazon Machine Image)** → instances serve faster → shorter effective cooldowns.
 
 ---
 
 ## Section 7 — RDS, Aurora & ElastiCache
 
-**The mental model:** RDS = managed relational engine. Aurora = AWS's cloud-native rebuild of MySQL/Postgres with storage magic. ElastiCache = the in-memory layer that keeps both alive under read pressure and makes apps stateless. The exam's favorite axis: **Multi-AZ = availability (DR)** vs **Read Replicas = performance (read scaling)**. Never confuse them.
+**The mental model:** RDS means Relational Database Service: a managed relational engine. Aurora = AWS's cloud-native rebuild of MySQL/Postgres with storage magic. ElastiCache = the in-memory layer that keeps both alive under read pressure and makes apps stateless. The exam's favorite axis: **Multi-AZ = availability / disaster recovery** vs **Read Replicas = performance (read scaling)**. Never confuse them.
 
 ### RDS core
 - Managed SQL databases: **Postgres, MySQL, MariaDB, Oracle, Microsoft SQL Server, IBM DB2, Aurora** (these are the *engines*).
-- Managed = automated provisioning, OS patching, continuous backups + **Point-in-Time Restore**, monitoring dashboards, read replicas, Multi-AZ, maintenance windows, vertical & horizontal scaling. Storage on EBS.
+- Managed = automated provisioning, OS patching, continuous backups + **Point-in-Time Restore**, monitoring dashboards, read replicas, Multi-AZ, maintenance windows, vertical & horizontal scaling. Storage on EBS, or Elastic Block Store.
 - **You cannot SSH into RDS** (no access to the underlying host) — except **RDS Custom**.
 - **Storage Auto Scaling:** set a **Maximum Storage Threshold**; RDS grows storage automatically when free space **< 10%** for **≥ 5 min** and **≥ 6 h** since last modification. All engines. Great for unpredictable workloads.
 
@@ -311,7 +311,7 @@ Single DNS point of access • spreads load • health checks + seamless failure
 
 ### ElastiCache
 - Managed **Redis / Memcached** (those are the *engine types*): in-memory, sub-ms reads. Two jobs: **(1) offload read-heavy RDS traffic, (2) externalize session state → stateless app tier**.
-- Unlike ELB/RDS drop-ins, ElastiCache requires **heavy application code changes** (your app must implement the caching logic).
+- Unlike Elastic Load Balancing and RDS (Relational Database Service) drop-ins, ElastiCache requires **heavy application code changes** (your app must implement the caching logic).
 - **DB-cache pattern:** app checks cache → hit = serve; miss = read RDS, write to cache. Needs a **cache invalidation strategy** (the hard part — "only two hard things in CS...").
 - **Session-store pattern:** login writes session to ElastiCache; any instance retrieves it → user stays logged in across instances.
 - **Redis vs Memcached (know cold):**
@@ -325,10 +325,10 @@ Single DNS point of access • spreads load • health checks + seamless failure
 
 ## Section 8 — Amazon Route 53
 
-**The mental model:** DNS doesn't route packets — it **answers questions**. Every "routing policy" is just a rule for *which answer to give*. Health checks decide *which answers are allowed*.
+**The mental model:** DNS, or Domain Name System, doesn't route packets — it **answers questions**. Every "routing policy" is just a rule for *which answer to give*. Health checks decide *which answers are allowed*.
 
 ### DNS fundamentals
-- DNS = hostname → IP, hierarchical. **Terminology:** Domain Registrar (Route 53, GoDaddy...), DNS Records, **Zone File** (holds the records), **Name Server** (answers queries — authoritative or not), **TLD** (.com/.org), **SLD** (amazon.com). FQDN = `api.www.example.com.` (protocol → subdomain → SLD → TLD → root).
+- DNS = Domain Name System: hostname → IP, hierarchical. **Terminology:** Domain Registrar (Route 53, GoDaddy...), DNS Records, **Zone File** (holds the records), **Name Server** (answers queries — authoritative or not), **TLD** (Top-Level Domain, such as .com/.org), **SLD** (Second-Level Domain, such as amazon.com). FQDN means Fully Qualified Domain Name, such as `api.www.example.com.` (protocol → subdomain → SLD → TLD → root).
 - **Resolution walk:** browser → local/ISP resolver → **Root servers** (ICANN) → **TLD servers** (IANA) hand back the domain's NS records → **SLD/authoritative name server** (your registrar/Route 53) returns the record → resolver **caches it for the TTL**.
 - Registrar vs Registry (from your annotation — worth keeping): the registrar (GoDaddy) just files your NS records with the registry (e.g., Verisign for .com). The registrar never answers DNS queries; resolvers go registry → your name servers directly.
 
@@ -336,15 +336,15 @@ Single DNS point of access • spreads load • health checks + seamless failure
 - Highly available, scalable, fully managed, **authoritative** DNS (authoritative = *you* can update the records). Also a **domain registrar**. Can health-check resources. **The only AWS service with a 100% availability SLA.** Named after DNS port 53.
 
 ### Records & Hosted Zones
-- A record = **name + type + value + routing policy + TTL**.
+- A record = **name + type + value + routing policy + TTL**. TTL means **Time To Live**, or how long resolvers cache the answer.
 - **Must-know types: A** (hostname→IPv4), **AAAA** (→IPv6), **CNAME** (hostname→hostname; target needs an A/AAAA), **NS** (name servers for the zone — control how traffic is routed for the domain). Advanced (recognize): CAA, DS, MX, NAPTR, PTR, SOA, TXT, SPF, SRV.
 - **Hosted Zone** = container of records for a domain + subdomains. **Public** (internet) vs **Private** (resolve inside your VPCs — `app.company.internal`). **$0.50/month per zone** (Route 53 isn't free).
-- **TTL:** high (24 h) = less Route 53 traffic + $ savings, but stale records linger; low (60 s) = fresh + easy changes, more queries $. **TTL is mandatory on every record type EXCEPT Alias.**
+- **TTL (Time To Live):** high (24 h) = less Route 53 traffic + $ savings, but stale records linger; low (60 s) = fresh + easy changes, more queries $. **TTL is mandatory on every record type EXCEPT Alias.**
 
 ### CNAME vs Alias — the guaranteed exam question
 - **CNAME:** any hostname → any hostname, but **NEVER on the zone apex/root** (`example.com` ✗, `www.example.com` ✓).
 - **Alias:** hostname → **AWS resource** only. **Works on the root domain AND subdomains. Free. Native health checks.** Always type A/AAAA; **TTL is set by AWS, not you**; auto-tracks the resource's changing IPs.
-- **Alias targets:** ELBs, CloudFront, API Gateway, Elastic Beanstalk, **S3 Websites** (not buckets), VPC Interface Endpoints, Global Accelerator, another Route 53 record in the same zone. **NOT an EC2 DNS name** (memorize the exception).
+- **Alias targets:** ELBs (Elastic Load Balancers), CloudFront, API Gateway, Elastic Beanstalk, **S3 Websites** (not buckets), VPC Interface Endpoints, Global Accelerator, another Route 53 record in the same zone. **NOT an EC2 DNS name** (memorize the exception).
 
 ### Routing Policies (which answer does Route 53 give?)
 | Policy | Behavior | Notes / triggers |
@@ -356,10 +356,10 @@ Single DNS point of access • spreads load • health checks + seamless failure
 | **Geolocation** | answer by **user's location** (continent / country / US state — most precise match wins) | ≠ latency! **Create a Default record** for no-match; localization, content restriction |
 | **Geoproximity** | shift traffic by geography **± bias** (1..99 expand, −1..−99 shrink) | AWS resources (region) or lat/long; **requires Route 53 Traffic Flow** |
 | **IP-based** | route by client CIDR blocks (IP→endpoint mapping) | e.g., send a specific ISP to a specific endpoint |
-| **Multi-Value** | return **up to 8 healthy** records | client-side "load balancing"; health-checkable; **NOT a substitute for an ELB** |
+| **Multi-Value** | return **up to 8 healthy** records | client-side "load balancing"; health-checkable; **NOT a substitute for an ELB / Elastic Load Balancer** |
 
 ### Health Checks
-- **Endpoint monitors:** ~**15 global checkers**; healthy/unhealthy threshold = 3; interval 30 s (10 s = faster, costs more); HTTP/HTTPS/TCP; healthy if **> 18% of checkers** say so; pass only on **2xx/3xx** (or on text match in the **first 5,120 bytes**). Your firewall/SG must **allow the Route 53 health-checker IP ranges**.
+- **Endpoint monitors:** ~**15 global checkers**; healthy/unhealthy threshold = 3; interval 30 s (10 s = faster, costs more); HTTP/HTTPS/TCP; healthy if **> 18% of checkers** say so; pass only on **2xx/3xx** (or on text match in the **first 5,120 bytes**). Your firewall/security group must **allow the Route 53 health-checker IP ranges**.
 - **Calculated health checks:** parent combines up to **256 children** with **AND / OR / NOT**, with a pass-count threshold — do maintenance without tripping everything.
 - **Private resources problem:** the checkers live *outside* your VPC → they can't reach private endpoints. **Workaround: CloudWatch metric → CloudWatch alarm → health check monitors the alarm.** (Also the trick for "full control" checks — DynamoDB throttles, RDS alarms, custom metrics.)
 - Health checks integrate with CloudWatch metrics, and are what turns DNS into **automated DNS failover**.
@@ -376,54 +376,54 @@ Single DNS point of access • spreads load • health checks + seamless failure
 ### Case 1 — WhatIsTheTime.com (stateless app)
 1. **One public EC2 + Elastic IP.** Fine until load grows.
 2. **Scale vertically** (t2 → m5): **downtime during the resize.** Users angry.
-3. **Scale horizontally, DNS A record to each instance** (TTL 1 h): an instance dies → **users keep hitting the dead IP for up to an hour** (TTL caching). DNS is not failover.
-4. **Add ELB + health checks**, instances go **private**, security groups chained (ELB SG → EC2 SG), DNS becomes an **Alias record** (ELB IPs change; CNAME can't do root domain anyway). New pain: adding/removing instances by hand.
-5. **Add an ASG** → automatic scale out/in. New pain: everything in one AZ = disaster-recovery nightmare.
-6. **Go Multi-AZ** (ELB + ASG across 2–3 AZs) → survives AZ loss. Costs more; that's the tradeoff you accept for HA.
-7. **Reserve capacity** for the ASG **minimum size** → steady baseline = Reserved Instances = cost savings. (Spot for the bursty top if fault-tolerant.)
+3. **Scale horizontally, DNS A record to each instance** (TTL / Time To Live = 1 h): an instance dies → **users keep hitting the dead IP for up to an hour** (TTL caching). DNS is not failover.
+4. **Add ELB (Elastic Load Balancing) + health checks**, instances go **private**, security groups chained (load balancer security group → EC2 security group), DNS becomes an **Alias record** (ELB IPs change; CNAME can't do root domain anyway). New pain: adding/removing instances by hand.
+5. **Add an ASG (Auto Scaling Group)** → automatic scale out/in. New pain: everything in one Availability Zone = disaster-recovery nightmare.
+6. **Go Multi-AZ** (Elastic Load Balancing + Auto Scaling Group across 2–3 Availability Zones) → survives Availability Zone loss. Costs more; that's the tradeoff you accept for high availability.
+7. **Reserve capacity** for the Auto Scaling Group **minimum size** → steady baseline = Reserved Instances = cost savings. (Spot for the bursty top if fault-tolerant.)
 
-*Lessons the deck names explicitly:* public vs private IPs, EIP vs Route 53 vs ELB, TTL/A/Alias, manual vs ASG, Multi-AZ, ELB health checks, SG rules, reserving capacity.
+*Lessons the deck names explicitly:* public vs private IPs, Elastic IP vs Route 53 vs Elastic Load Balancing, TTL/A/Alias, manual vs Auto Scaling Group, Multi-AZ, Elastic Load Balancing health checks, security group rules, reserving capacity.
 
 ### Case 2 — MyClothes.com (stateful: shopping cart)
 The core problem: **horizontal scaling bounces users between instances → they lose carts/logins.** Three escalating fixes:
-1. **ELB Sticky Sessions** — works, but the cart dies with the instance, plus load imbalance.
+1. **ELB Sticky Sessions** — Elastic Load Balancing can keep the same client on the same backend instance, but the cart dies with the instance, plus load imbalance.
 2. **Client-side web cookies** (cart in the cookie) — app becomes stateless, but: **≤ 4 KB**, heavier HTTP requests, **security risk (users/attackers can alter cookies → must validate)**.
 3. **Server session store** — cookie holds only a **session_id**; cart lives in **ElastiCache** (**DynamoDB is the alternative**). Secure (attackers can't touch the store), fast, stateless app tier. **This is the pattern.**
 - **User data** (addresses, profiles) → **RDS**. Reads explode → two options: **RDS Read Replicas** or **ElastiCache lazy loading** (cache hit spares the DB; costs you cache-management code + invalidation headaches).
-- **Survive disasters:** Multi-AZ the ELB, the ASG, **RDS Multi-AZ, ElastiCache Multi-AZ** (Redis).
-- **Security groups tightened by reference:** ELB open to 0.0.0.0/0 on 80/443 → EC2 SG accepts only ELB SG → RDS/ElastiCache SGs accept only EC2 SG. **The 3-tier SG chain — memorize it.**
+- **Survive disasters:** make Elastic Load Balancing, the Auto Scaling Group, **RDS Multi-AZ, and ElastiCache Multi-AZ** (Redis) span multiple Availability Zones.
+- **Security groups tightened by reference:** Elastic Load Balancing open to 0.0.0.0/0 on 80/443 → EC2 security group accepts only the load balancer security group → RDS/ElastiCache security groups accept only the EC2 security group. **The 3-tier security group chain — memorize it.**
 
 ### Case 3 — MyWordPress.com (shared uploads)
 - DB layer: RDS Multi-AZ → upgraded to **Aurora MySQL Multi-AZ + Read Replicas** (less ops, global scaling).
-- Image uploads on **EBS**: fine with **one** instance; with many instances each has its own volume → **users' images "disappear"** depending on which instance serves them.
-- Fix: **EFS** — one shared NFS mounted by all instances via **ENIs in every AZ**. The canonical "distributed app needs shared file storage" architecture. (EBS = single-instance storage; EFS = distributed storage.)
+- Image uploads on **EBS (Elastic Block Store)**: fine with **one** instance; with many instances each has its own volume → **users' images "disappear"** depending on which instance serves them.
+- Fix: **EFS (Elastic File System)** — one shared NFS filesystem mounted by all instances via **ENIs (Elastic Network Interfaces) in every Availability Zone**. The canonical "distributed app needs shared file storage" architecture. (EBS = single-instance storage; EFS = distributed storage.)
 
 ### Instantiating applications quickly (full-stack boot speed)
-- **EC2:** **Golden AMI** (pre-install apps/OS deps — the quiz answer, twice), **User Data** for dynamic config only, **Hybrid** = Golden AMI + User Data (this is what Elastic Beanstalk does).
-- **RDS:** **restore from snapshot** → schemas + data ready.
-- **EBS:** **restore from snapshot** → formatted disk with data.
+- **EC2:** **Golden AMI (Amazon Machine Image)** (pre-install apps/OS dependencies — the quiz answer, twice), **User Data** for dynamic config only, **Hybrid** = Golden AMI + User Data (this is what Elastic Beanstalk does).
+- **RDS (Relational Database Service):** **restore from snapshot** → schemas + data ready.
+- **EBS (Elastic Block Store):** **restore from snapshot** → formatted disk with data.
 
 ### The typical 3-tier web architecture (draw it from memory)
-**Route 53 → ELB (public subnet) → ASG of EC2 across ≥2 AZs (private subnet) → RDS + ElastiCache (data subnet).** ElastiCache = session + cached reads; RDS = source of truth.
+**Route 53 → ELB / Elastic Load Balancing (public subnet) → ASG / Auto Scaling Group of EC2 across ≥2 Availability Zones (private subnet) → RDS / Relational Database Service + ElastiCache (data subnet).** ElastiCache = session + cached reads; RDS = source of truth.
 
 ### Elastic Beanstalk
-- The problem it solves: every web app is "ALB + ASG + RDS" again; **developers just want their code to run** consistently across environments.
-- **Developer-centric PaaS** wrapping EC2, ASG, ELB, RDS. Managed: capacity provisioning, LB, scaling, health monitoring, instance config. **You keep full config control.** **Beanstalk is free — pay for the underlying resources.**
+- The problem it solves: every web app is "Application Load Balancer + Auto Scaling Group + RDS" again; **developers just want their code to run** consistently across environments.
+- **Developer-centric PaaS (Platform as a Service)** wrapping EC2, Auto Scaling Groups, Elastic Load Balancing, and RDS. Managed: capacity provisioning, load balancing, scaling, health monitoring, instance config. **You keep full config control.** **Beanstalk is free — pay for the underlying resources.**
 - **Components:** **Application** (the collection) → **Application Versions** (code iterations) → **Environments** (resources running ONE version at a time; dev/test/prod).
-- **Two tiers:** **Web Server Environment** (classic ELB + ASG serving HTTP) vs **Worker Environment** (**SQS queue** + workers; **scales on queue depth**; web tier can push jobs to it).
-- **Deployment modes:** **Single Instance** (EC2 + Elastic IP, DB on-instance — dev) vs **High Availability with LB** (ALB + ASG multi-AZ + RDS Multi-AZ standby — prod).
+- **Two tiers:** **Web Server Environment** (classic Elastic Load Balancing + Auto Scaling Group serving HTTP) vs **Worker Environment** (**SQS / Simple Queue Service queue** + workers; **scales on queue depth**; web tier can push jobs to it).
+- **Deployment modes:** **Single Instance** (EC2 + Elastic IP, database on-instance — dev) vs **High Availability with LB / load balancer** (Application Load Balancer + Auto Scaling Group multi-AZ + RDS Multi-AZ standby — prod).
 - Platforms: Go, Java SE/Tomcat, .NET (Linux & Windows), Node.js, PHP, Python, Ruby, Packer, Docker (single/multi-container/preconfigured).
 
 ---
 
 ## The Cross-Section Exam Traps (rapid-fire recap)
-1. **Multi-AZ = DR/availability. Read Replicas = read performance.** Sync vs async. One DNS name vs new connection strings.
+1. **Multi-AZ = disaster recovery/availability across multiple Availability Zones. Read Replicas = read performance.** Sync vs async. One DNS name vs new connection strings.
 2. **CNAME never on the zone apex; Alias everywhere, free, AWS targets only, no EC2 DNS names.**
 3. **Timeout = security group. Connection refused = application.** SGs are stateful; inbound denied / outbound allowed by default.
-4. **EBS is AZ-locked → snapshot to move. Root volume deletes on termination by default; extra volumes don't.**
+4. **EBS (Elastic Block Store) is Availability-Zone-locked → snapshot to move. Root volume deletes on termination by default; extra volumes don't.**
 5. **Spot: cancel the request, then terminate instances. Never for DBs.**
-6. **Golden AMI** whenever the question smells like "installs take too long at launch/scale-out."
-7. **EFS = shared, multi-AZ, Linux-only, pay-per-use. EBS = one instance. Instance Store = ephemeral speed. RDS ≠ file storage.**
-8. **NLB = static IP/extreme TCP-UDP performance. ALB = L7 routing/containers. GWLB = 3rd-party appliances (GENEVE 6081).**
+6. **Golden AMI (Amazon Machine Image)** whenever the question smells like "installs take too long at launch/scale-out."
+7. **EFS (Elastic File System) = shared, multi-AZ, Linux-only, pay-per-use. EBS (Elastic Block Store) = one instance. Instance Store = ephemeral speed. RDS (Relational Database Service) ≠ file storage.**
+8. **NLB (Network Load Balancer) = static IP/extreme TCP-UDP performance. ALB (Application Load Balancer) = Layer 7 routing/containers. GWLB (Gateway Load Balancer) = 3rd-party appliances (GENEVE 6081).**
 9. **"Most cost-effective storage"** → check persistent? shared? throughput? then default to the simplest: **S3 > EFS > EBS**.
 10. **Stateless beats stateful:** session_id cookie + ElastiCache/DynamoDB > sticky sessions > fat cookies.

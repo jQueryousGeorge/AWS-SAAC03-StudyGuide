@@ -30,12 +30,12 @@ export function renderSummary({ app, pageTitle, state, sectionMeta }) {
     </div>
     <div class="asset-strip" aria-label="Reference images">
       <a class="asset-card" href="/assets/iam-roles-entity-types.png" target="_blank" rel="noopener">
-        <img src="/assets/iam-roles-entity-types.png" alt="IAM roles and entity types diagram">
-        <span><strong>IAM entity map</strong><small>Open full-size diagram</small></span>
+        <img src="/assets/iam-roles-entity-types.png" alt="Identity and Access Management roles and entity types diagram">
+        <span><strong>IAM entity map</strong><small>Identity and Access Management roles and entity types</small></span>
       </a>
       <a class="asset-card" href="/assets/ebs_vs_instanceStore.png" target="_blank" rel="noopener">
-        <img src="/assets/ebs_vs_instanceStore.png" alt="EBS versus instance store comparison">
-        <span><strong>EBS vs Instance Store</strong><small>Open full-size diagram</small></span>
+        <img src="/assets/ebs_vs_instanceStore.png" alt="Elastic Block Store versus instance store comparison">
+        <span><strong>EBS vs Instance Store</strong><small>Elastic Block Store compared with local instance storage</small></span>
       </a>
     </div>
   `;

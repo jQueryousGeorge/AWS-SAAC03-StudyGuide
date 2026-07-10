@@ -481,11 +481,19 @@ select {
 
 .markdown {
   line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.study-panel {
+  min-width: 0;
 }
 
 .markdown h2,
 .markdown h3 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   scroll-margin-top: 110px;
+  word-break: break-word;
 }
 
 .markdown table {
@@ -499,11 +507,15 @@ select {
 .markdown td {
   border: 1px solid var(--line);
   padding: 8px 10px;
+  overflow-wrap: normal;
   text-align: left;
+  word-break: normal;
 }
 
 .markdown th {
   background: #eef6f7;
+  min-width: 72px;
+  white-space: nowrap;
 }
 
 .markdown blockquote {

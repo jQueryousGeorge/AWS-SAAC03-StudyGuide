@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AWS Failover Simulator: Route 53 vs ELB</title>
+    <title>AWS Failover Simulator: Route 53 vs Elastic Load Balancing</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -154,26 +154,26 @@
     <div class="sim-shell">
         <div class="hero">
             <h1>AWS Failover Simulator</h1>
-            <p>Comparing Route 53 DNS Failover vs. Elastic Load Balancer (ELB) Failover</p>
+            <p>Comparing Route 53 DNS Failover vs. Elastic Load Balancing (ELB) Failover</p>
         </div>
 
         <!-- Route 53 Section -->
         <div class="panel">
             <div class="panel-copy">
                 <h2 class="route-title">Route 53 (DNS Failover)</h2>
-                <p class="description">DNS failover relies on health checks and TTL. Traffic continues to the dead instance until the client's cached TTL expires and it fetches the new IP.</p>
+                <p class="description">DNS means Domain Name System. DNS failover relies on health checks and TTL, or Time To Live. Traffic continues to the dead instance until the client's cached TTL expires and it fetches the new IP.</p>
                 
                 <div class="metric-card">
                     <div class="metric-row"><span>Successful:</span> <span id="r53-success" class="value green">0</span></div>
                     <div class="metric-row"><span>Dropped/Failed:</span> <span id="r53-dropped" class="value red">0</span></div>
                     <div class="metric-row divider">
-                        <span>Client TTL Cache:</span> 
+                        <span>Client TTL Cache (Time To Live):</span>
                         <span id="r53-ttl-display" class="yellow mono">10s</span>
                     </div>
                 </div>
 
                 <div class="control-stack">
-                    <label>Set DNS TTL (Seconds): <span id="ttl-val">10</span>s</label>
+                    <label>Set DNS TTL / Time To Live (Seconds): <span id="ttl-val">10</span>s</label>
                     <input type="range" id="ttl-slider" min="2" max="20" value="10">
                 </div>
 
@@ -190,8 +190,8 @@
         <!-- ELB Section -->
         <div class="panel">
             <div class="panel-copy">
-                <h2 class="elb-title">Elastic Load Balancer</h2>
-                <p class="description">The ELB actively proxies traffic. The moment a backend node fails a health check, traffic is instantly re-routed to healthy nodes with zero client-side delay.</p>
+                <h2 class="elb-title">Elastic Load Balancing</h2>
+                <p class="description">ELB means Elastic Load Balancing. It actively proxies traffic. The moment a backend node fails a health check, traffic is instantly re-routed to healthy nodes with zero client-side delay.</p>
                 
                 <div class="metric-card">
                     <div class="metric-row"><span>Successful:</span> <span id="elb-success" class="value green">0</span></div>

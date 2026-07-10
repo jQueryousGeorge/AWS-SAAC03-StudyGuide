@@ -17,30 +17,30 @@ export function renderHome({ app, pageTitle, sectionMeta }) {
       <div class="architecture-board" aria-label="AWS 3-tier architecture visual">
         <div class="layer">
           <div class="layer-label">DNS</div>
-          <div class="nodes"><div class="node accent">Route 53<small>Alias, health checks, routing policy</small></div></div>
+          <div class="nodes"><div class="node accent">Route 53<small>Domain Name System answers, Alias records, health checks</small></div></div>
         </div>
         <div class="layer">
           <div class="layer-label">Public</div>
           <div class="nodes">
-            <div class="node accent">ALB<small>HTTP/S, paths, hostnames</small></div>
-            <div class="node accent">NLB<small>Static IP, TCP/UDP</small></div>
+            <div class="node accent">ALB<small>Application Load Balancer: HTTP/S paths and hostnames</small></div>
+            <div class="node accent">NLB<small>Network Load Balancer: static IP, TCP/UDP</small></div>
             <div class="node accent">CloudFront<small>Edge delivery</small></div>
           </div>
         </div>
         <div class="layer">
           <div class="layer-label">Private</div>
           <div class="nodes">
-            <div class="node">ASG AZ-a<small>EC2 app tier</small></div>
-            <div class="node">ASG AZ-b<small>EC2 app tier</small></div>
-            <div class="node">ASG AZ-c<small>EC2 app tier</small></div>
+            <div class="node">ASG AZ-a<small>Auto Scaling Group in Availability Zone A</small></div>
+            <div class="node">ASG AZ-b<small>Auto Scaling Group in Availability Zone B</small></div>
+            <div class="node">ASG AZ-c<small>Auto Scaling Group in Availability Zone C</small></div>
           </div>
         </div>
         <div class="layer">
           <div class="layer-label">Data</div>
           <div class="nodes">
-            <div class="node data">RDS/Aurora<small>Source of truth</small></div>
+            <div class="node data">RDS/Aurora<small>Relational Database Service source of truth</small></div>
             <div class="node data">ElastiCache<small>Sessions and reads</small></div>
-            <div class="node data">EFS<small>Shared Linux files</small></div>
+            <div class="node data">EFS<small>Elastic File System shared Linux files</small></div>
           </div>
         </div>
       </div>
