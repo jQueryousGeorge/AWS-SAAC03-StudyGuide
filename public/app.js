@@ -254,7 +254,7 @@ const visualStudies = [
     asset: "/assets/route53-vs-elb-failover-simulator.html",
     sections: [6, 8, 9],
     summary:
-      "This simulator contrasts DNS-based failover with load balancer failover. Route 53 can stop returning an unhealthy endpoint after health checks update DNS, but clients may keep using cached answers until TTL expires. An ELB sits in the request path and can route new traffic away from unhealthy targets as soon as its health checks mark them out of service.",
+      "This simulator contrasts DNS-based failover with load balancer failover. Route 53 can stop returning an unhealthy endpoint after health checks update DNS, but clients may keep using cached answers until TTL expires. On the other hand, an ELB sits in the request path and can route new traffic away from unhealthy targets as soon as its health checks mark them out of service.",
     takeaways: [
       "Route 53 routing policies choose DNS answers; they do not proxy traffic.",
       "DNS failover is affected by health check timing and resolver/client TTL caching.",
