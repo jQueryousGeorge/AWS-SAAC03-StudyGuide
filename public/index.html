@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS SAA Study Console</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="/" data-link>
+          <span class="brand-mark">AWS</span>
+          <span>
+            <strong>SAA Study Console</strong>
+            <small>Sections 1-9</small>
+          </span>
+        </a>
+        <nav class="nav-stack">
+          <a href="/" data-link>Dashboard</a>
+          <a href="/summary" data-link>Master Summary</a>
+          <a href="/flashcards" data-link>Flashcards</a>
+          <a href="/exam" data-link>Exam Center</a>
+        </nav>
+        <div class="section-nav" id="sectionNav"></div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="menuButton" type="button" aria-label="Toggle navigation">☰</button>
+          <div>
+            <p class="eyebrow">AWS Certified Solutions Architect - Associate</p>
+            <h1 id="pageTitle">Study Console</h1>
+          </div>
+          <div class="top-actions">
+            <a class="icon-button" href="/exam/a" data-link title="Start Exam A">A</a>
+            <a class="icon-button" href="/exam/b" data-link title="Start Exam B">B</a>
+          </div>
+        </header>
+        <section id="app" class="content" aria-live="polite"></section>
+      </main>
+    </div>
+    <script src="/exam-data.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

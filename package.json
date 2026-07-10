@@ -1,0 +1,13 @@
+{
+  "name": "aws-study-website",
+  "version": "1.0.0",
+  "description": "Interactive AWS SAA-C03 study site built from personal Udemy notes.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

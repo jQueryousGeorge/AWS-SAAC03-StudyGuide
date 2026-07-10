@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Failover Simulator: Route 53 vs ELB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { background-color: #1e293b; border-radius: 0.5rem; box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05); width: 100%; height: auto; display: block;}
+        .panel { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto space-y-8">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-white mb-2">AWS Failover Simulator</h1>
+            <p class="text-slate-400">Comparing Route 53 DNS Failover vs. Elastic Load Balancer (ELB) Failover</p>
+        </div>
+
+        <!-- Route 53 Section -->
+        <div class="panel flex flex-col md:flex-row gap-6">
+            <div class="w-full md:w-1/3 flex flex-col space-y-4">
+                <h2 class="text-xl font-semibold text-blue-400 border-b border-slate-600 pb-2">Route 53 (DNS Failover)</h2>
+                <p class="text-sm text-slate-300">DNS failover relies on health checks and TTL. Traffic continues to the dead instance until the client's cached TTL expires and it fetches the new IP.</p>
+                
+                <div class="bg-slate-800 p-3 rounded text-sm space-y-2">
+                    <div class="flex justify-between"><span>Successful:</span> <span id="r53-success" class="text-green-400 font-bold">0</span></div>
+                    <div class="flex justify-between"><span>Dropped/Failed:</span> <span id="r53-dropped" class="text-red-400 font-bold">0</span></div>
+                    <div class="flex justify-between border-t border-slate-600 pt-2 mt-2">
+                        <span>Client TTL Cache:</span> 
+                        <span id="r53-ttl-display" class="text-yellow-400 font-mono">10s</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Set DNS TTL (Seconds): <span id="ttl-val">10</span>s</label>
+                    <input type="range" id="ttl-slider" min="2" max="20" value="10" class="w-full accent-blue-500">
+                </div>
+
+                <div class="flex gap-2 mt-auto pt-4">
+                    <button id="btn-fail-r53" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-medium transition">Fail Primary</button>
+                    <button id="btn-rec-r53" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium transition opacity-50 cursor-not-allowed" disabled>Recover</button>
+                </div>
+            </div>
+            <div class="w-full md:w-2/3">
+                <canvas id="canvas-r53" width="600" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- ELB Section -->
+        <div class="panel flex flex-col md:flex-row gap-6">
+            <div class="w-full md:w-1/3 flex flex-col space-y-4">
+                <h2 class="text-xl font-semibold text-purple-400 border-b border-slate-600 pb-2">Elastic Load Balancer</h2>
+                <p class="text-sm text-slate-300">The ELB actively proxies traffic. The moment a backend node fails a health check, traffic is instantly re-routed to healthy nodes with zero client-side delay.</p>
+                
+                <div class="bg-slate-800 p-3 rounded text-sm space-y-2">
+                    <div class="flex justify-between"><span>Successful:</span> <span id="elb-success" class="text-green-400 font-bold">0</span></div>
+                    <div class="flex justify-between"><span>Dropped/Failed:</span> <span id="elb-dropped" class="text-red-400 font-bold">0</span></div>
+                    <div class="flex justify-between border-t border-slate-600 pt-2 mt-2">
+                        <span>Proxy Status:</span> 
+                        <span class="text-purple-400 font-mono">Instant Routing</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-auto pt-4">
+                    <button id="btn-fail-elb" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-medium transition">Fail Node A</button>
+                    <button id="btn-rec-elb" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium transition opacity-50 cursor-not-allowed" disabled>Recover</button>
+                </div>
+            </div>
+            <div class="w-full md:w-2/3">
+                <canvas id="canvas-elb" width="600" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Utilities
+        const drawNode = (ctx, x, y, label, isHealthy, type = 'server') => {
+            ctx.beginPath();
+            if (type === 'client') {
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.fillStyle = '#cbd5e1';
+            } else if (type === 'proxy' || type === 'dns') {
+                ctx.rect(x - 25, y - 25, 50, 50);
+                ctx.fillStyle = '#818cf8';
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#4f46e5';
+                ctx.stroke();
+            } else {
+                ctx.rect(x - 30, y - 20, 60, 40);
+                ctx.fillStyle = isHealthy ? '#22c55e' : '#ef4444';
+            }
+            ctx.fill();
+
+            ctx.fillStyle = type === 'client' ? '#0f172a' : '#ffffff';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, y);
+        };
+
+        const drawLine = (ctx, x1, y1, x2, y2, dashed = false) => {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            if (dashed) ctx.setLineDash([5, 5]);
+            else ctx.setLineDash([]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        };
+
+        // --- Route 53 Simulation ---
+        const r53Canvas = document.getElementById('canvas-r53');
+        const r53Ctx = r53Canvas.getContext('2d');
+        
+        let r53State = {
+            primaryHealthy: true,
+            dnsPointsTo: 'primary', // 'primary' or 'secondary'
+            clientCache: 'primary',
+            ttlMax: 10,
+            ttlCurrent: 10,
+            packets: [],
+            stats: { success: 0, dropped: 0 },
+            lastPacketTime: 0
+        };
+
+        // R53 Nodes
+        const r53Nodes = {
+            client: { x: 50, y: 150 },
+            dns: { x: 300, y: 50 },
+            primary: { x: 500, y: 100 },
+            secondary: { x: 500, y: 200 }
+        };
+
+        // R53 Loop
+        let r53FrameId;
+        function updateR53(timestamp) {
+            r53Ctx.clearRect(0, 0, r53Canvas.width, r53Canvas.height);
+
+            // Draw connections
+            drawLine(r53Ctx, r53Nodes.client.x, r53Nodes.client.y, r53Nodes.dns.x, r53Nodes.dns.y, true);
+            drawLine(r53Ctx, r53Nodes.client.x, r53Nodes.client.y, r53Nodes.primary.x, r53Nodes.primary.y);
+            drawLine(r53Ctx, r53Nodes.client.x, r53Nodes.client.y, r53Nodes.secondary.x, r53Nodes.secondary.y);
+
+            // Draw nodes
+            drawNode(r53Ctx, r53Nodes.client.x, r53Nodes.client.y, 'Client', true, 'client');
+            drawNode(r53Ctx, r53Nodes.dns.x, r53Nodes.dns.y, 'Route 53', true, 'dns');
+            drawNode(r53Ctx, r53Nodes.primary.x, r53Nodes.primary.y, 'Primary', r53State.primaryHealthy);
+            drawNode(r53Ctx, r53Nodes.secondary.x, r53Nodes.secondary.y, 'Secondary', true);
+
+            // Generate Packets
+            if (timestamp - r53State.lastPacketTime > 600) {
+                const targetNode = r53State.clientCache === 'primary' ? r53Nodes.primary : r53Nodes.secondary;
+                r53State.packets.push({
+                    x: r53Nodes.client.x, y: r53Nodes.client.y,
+                    targetX: targetNode.x, targetY: targetNode.y,
+                    targetName: r53State.clientCache,
+                    progress: 0
+                });
+                r53State.lastPacketTime = timestamp;
+            }
+
+            // Update & Draw Packets
+            for (let i = r53State.packets.length - 1; i >= 0; i--) {
+                let p = r53State.packets[i];
+                p.progress += 0.02; // Speed
+                
+                p.x = r53Nodes.client.x + (p.targetX - r53Nodes.client.x) * p.progress;
+                p.y = r53Nodes.client.y + (p.targetY - r53Nodes.client.y) * p.progress;
+
+                r53Ctx.beginPath();
+                r53Ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                r53Ctx.fillStyle = '#38bdf8';
+                r53Ctx.fill();
+
+                if (p.progress >= 1) {
+                    // Reached destination
+                    if (p.targetName === 'primary' && !r53State.primaryHealthy) {
+                        r53State.stats.dropped++;
+                        document.getElementById('r53-dropped').innerText = r53State.stats.dropped;
+                    } else {
+                        r53State.stats.success++;
+                        document.getElementById('r53-success').innerText = r53State.stats.success;
+                    }
+                    r53State.packets.splice(i, 1);
+                }
+            }
+
+            r53FrameId = requestAnimationFrame(updateR53);
+        }
+
+        // R53 Timers & Logic
+        setInterval(() => {
+            if (r53State.ttlCurrent > 0) {
+                r53State.ttlCurrent--;
+            } else {
+                // Client fetches new DNS record
+                r53State.clientCache = r53State.dnsPointsTo;
+                r53State.ttlCurrent = r53State.ttlMax; // Reset TTL
+                
+                // Visual ping to DNS
+                r53Ctx.beginPath();
+                r53Ctx.arc(r53Nodes.dns.x, r53Nodes.dns.y, 30, 0, Math.PI*2);
+                r53Ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                r53Ctx.lineWidth = 3;
+                r53Ctx.stroke();
+            }
+            document.getElementById('r53-ttl-display').innerText = r53State.ttlCurrent + 's';
+        }, 1000);
+
+        // --- ELB Simulation ---
+        const elbCanvas = document.getElementById('canvas-elb');
+        const elbCtx = elbCanvas.getContext('2d');
+
+        let elbState = {
+            nodeAHealthy: true,
+            packets: [],
+            stats: { success: 0, dropped: 0 },
+            lastPacketTime: 0,
+            toggleTarget: 'A'
+        };
+
+        const elbNodes = {
+            client: { x: 50, y: 150 },
+            elb: { x: 275, y: 150 },
+            nodeA: { x: 500, y: 80 },
+            nodeB: { x: 500, y: 220 }
+        };
+
+        function updateELB(timestamp) {
+            elbCtx.clearRect(0, 0, elbCanvas.width, elbCanvas.height);
+
+            drawLine(elbCtx, elbNodes.client.x, elbNodes.client.y, elbNodes.elb.x, elbNodes.elb.y);
+            drawLine(elbCtx, elbNodes.elb.x, elbNodes.elb.y, elbNodes.nodeA.x, elbNodes.nodeA.y);
+            drawLine(elbCtx, elbNodes.elb.x, elbNodes.elb.y, elbNodes.nodeB.x, elbNodes.nodeB.y);
+
+            drawNode(elbCtx, elbNodes.client.x, elbNodes.client.y, 'Client', true, 'client');
+            drawNode(elbCtx, elbNodes.elb.x, elbNodes.elb.y, 'ELB', true, 'proxy');
+            drawNode(elbCtx, elbNodes.nodeA.x, elbNodes.nodeA.y, 'Node A', elbState.nodeAHealthy);
+            drawNode(elbCtx, elbNodes.nodeB.x, elbNodes.nodeB.y, 'Node B', true);
+
+            // Generate Packets to ELB
+            if (timestamp - elbState.lastPacketTime > 600) {
+                elbState.packets.push({
+                    x: elbNodes.client.x, y: elbNodes.client.y,
+                    stage: 1, // 1: to ELB, 2: to Node
+                    progress: 0,
+                    finalTarget: null
+                });
+                elbState.lastPacketTime = timestamp;
+            }
+
+            for (let i = elbState.packets.length - 1; i >= 0; i--) {
+                let p = elbState.packets[i];
+                p.progress += 0.03; // Slightly faster logic
+
+                if (p.stage === 1) {
+                    p.x = elbNodes.client.x + (elbNodes.elb.x - elbNodes.client.x) * p.progress;
+                    p.y = elbNodes.client.y + (elbNodes.elb.y - elbNodes.client.y) * p.progress;
+                    
+                    if (p.progress >= 1) {
+                        p.stage = 2;
+                        p.progress = 0;
+                        // ELB Routing Logic (Instant Health Check)
+                        if (elbState.nodeAHealthy) {
+                            // Round robin
+                            p.finalTarget = elbState.toggleTarget === 'A' ? elbNodes.nodeA : elbNodes.nodeB;
+                            elbState.toggleTarget = elbState.toggleTarget === 'A' ? 'B' : 'A';
+                        } else {
+                            // Only route to B
+                            p.finalTarget = elbNodes.nodeB;
+                        }
+                    }
+                } else if (p.stage === 2) {
+                    p.x = elbNodes.elb.x + (p.finalTarget.x - elbNodes.elb.x) * p.progress;
+                    p.y = elbNodes.elb.y + (p.finalTarget.y - elbNodes.elb.y) * p.progress;
+
+                    if (p.progress >= 1) {
+                        elbState.stats.success++; // ELB ensures it reaches a healthy node
+                        document.getElementById('elb-success').innerText = elbState.stats.success;
+                        elbState.packets.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                elbCtx.beginPath();
+                elbCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                elbCtx.fillStyle = '#c084fc'; // Purple for ELB packets
+                elbCtx.fill();
+            }
+
+            requestAnimationFrame(updateELB);
+        }
+
+        // Start loops
+        requestAnimationFrame(updateR53);
+        requestAnimationFrame(updateELB);
+
+        // --- Interactions ---
+        // Route 53 Controls
+        const btnFailR53 = document.getElementById('btn-fail-r53');
+        const btnRecR53 = document.getElementById('btn-rec-r53');
+        const ttlSlider = document.getElementById('ttl-slider');
+        const ttlValDisplay = document.getElementById('ttl-val');
+
+        ttlSlider.addEventListener('input', (e) => {
+            r53State.ttlMax = parseInt(e.target.value);
+            ttlValDisplay.innerText = r53State.ttlMax;
+        });
+
+        btnFailR53.addEventListener('click', () => {
+            r53State.primaryHealthy = false;
+            // Simulate Route 53 health check delay (3 seconds) before updating DNS record globally
+            setTimeout(() => { r53State.dnsPointsTo = 'secondary'; }, 3000);
+            
+            btnFailR53.disabled = true;
+            btnFailR53.classList.add('opacity-50', 'cursor-not-allowed');
+            btnRecR53.disabled = false;
+            btnRecR53.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        btnRecR53.addEventListener('click', () => {
+            r53State.primaryHealthy = true;
+            // DNS updates to primary after health check
+            setTimeout(() => { r53State.dnsPointsTo = 'primary'; }, 3000);
+            
+            btnRecR53.disabled = true;
+            btnRecR53.classList.add('opacity-50', 'cursor-not-allowed');
+            btnFailR53.disabled = false;
+            btnFailR53.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        // ELB Controls
+        const btnFailElb = document.getElementById('btn-fail-elb');
+        const btnRecElb = document.getElementById('btn-rec-elb');
+
+        btnFailElb.addEventListener('click', () => {
+            elbState.nodeAHealthy = false;
+            btnFailElb.disabled = true;
+            btnFailElb.classList.add('opacity-50', 'cursor-not-allowed');
+            btnRecElb.disabled = false;
+            btnRecElb.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        btnRecElb.addEventListener('click', () => {
+            elbState.nodeAHealthy = true;
+            btnRecElb.disabled = true;
+            btnRecElb.classList.add('opacity-50', 'cursor-not-allowed');
+            btnFailElb.disabled = false;
+            btnFailElb.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+    </script>
+</body>
+</html>
