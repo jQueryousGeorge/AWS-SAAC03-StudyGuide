@@ -13,13 +13,14 @@ export function renderSection({ app, pageTitle, state, sectionMeta }, id) {
         <div class="tags">${meta.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
       </div>
       <div class="button-row">
+        <button class="icon-button study-expand-button" id="studyExpandButton" type="button" aria-label="Expand study section" aria-pressed="false" title="Expand study section">⛶</button>
         ${link(`/flashcards?section=${meta.id}`, "Cards", "button secondary")}
         ${link("/exam", "Exam Center", "button secondary")}
       </div>
     </div>
-    <div class="grid two">
+    <div class="grid two section-study-layout" id="sectionStudyLayout">
       <article class="study-panel markdown">${markdownToHtml(section?.raw || "")}</article>
-      <aside class="study-panel">
+      <aside class="study-panel lock-panel">
         <h2>Lock It In</h2>
         <p class="muted">These cards are pulled from the highest-yield facts in this section.</p>
         <div class="grid">
@@ -33,4 +34,14 @@ export function renderSection({ app, pageTitle, state, sectionMeta }, id) {
       </aside>
     </div>
   `;
+
+  const studyLayout = document.querySelector("#sectionStudyLayout");
+  const studyExpandButton = document.querySelector("#studyExpandButton");
+  studyExpandButton.addEventListener("click", () => {
+    const expanded = studyLayout.classList.toggle("study-expanded");
+    studyExpandButton.setAttribute("aria-pressed", String(expanded));
+    studyExpandButton.setAttribute("aria-label", expanded ? "Show Lock It In panel" : "Expand study section");
+    studyExpandButton.title = expanded ? "Show Lock It In panel" : "Expand study section";
+    studyExpandButton.textContent = expanded ? "×" : "⛶";
+  });
 }

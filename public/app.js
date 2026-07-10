@@ -12,6 +12,9 @@ const app = document.querySelector("#app");
 const pageTitle = document.querySelector("#pageTitle");
 const sectionNav = document.querySelector("#sectionNav");
 const menuButton = document.querySelector("#menuButton");
+const sidebarToggle = document.querySelector("#sidebarToggle");
+const sidebarReopen = document.querySelector("#sidebarReopen");
+const collapsedPageTitle = document.querySelector("#collapsedPageTitle");
 
 const contentPath = "/content/aws-saa-sections-1-9-master-summary.md";
 
@@ -51,6 +54,15 @@ function buildNav() {
     .join("")}`;
 }
 
+function setSidebarCollapsed(collapsed) {
+  document.body.classList.toggle("sidebar-collapsed", collapsed);
+  sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+  sidebarToggle.setAttribute("aria-label", collapsed ? "Open sidebar" : "Collapse sidebar");
+  sidebarToggle.title = collapsed ? "Open sidebar" : "Collapse sidebar";
+  collapsedPageTitle.textContent = pageTitle.textContent;
+  localStorage.setItem("sidebarCollapsed", collapsed ? "true" : "false");
+}
+
 function navigate(path) {
   history.pushState(null, "", path);
   renderRoute();
@@ -70,6 +82,7 @@ function renderRoute() {
   else if (path === "/exam/a") renderExam(context, "a");
   else if (path === "/exam/b") renderExam(context, "b");
   else renderHome(context);
+  collapsedPageTitle.textContent = pageTitle.textContent;
   syncActiveLinks();
 }
 
@@ -83,7 +96,11 @@ document.addEventListener("click", (event) => {
 });
 
 menuButton.addEventListener("click", () => document.body.classList.toggle("nav-open"));
+sidebarToggle.addEventListener("click", () => setSidebarCollapsed(!document.body.classList.contains("sidebar-collapsed")));
+sidebarReopen.addEventListener("click", () => setSidebarCollapsed(false));
 window.addEventListener("popstate", renderRoute);
+
+setSidebarCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
 
 fetch(contentPath)
   .then((response) => response.text())
