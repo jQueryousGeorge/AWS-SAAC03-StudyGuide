@@ -8,6 +8,7 @@ An interactive Node.js study site for AWS Certified Solutions Architect - Associ
 - Dashboard/welcome page with a 3-tier AWS architecture visual
 - Summary hub for Sections 1-9, with quick links and cross-section exam traps
 - Individual section pages for focused review
+- Visual study section with embedded interactive AWS diagrams
 - 120 flip-to-reveal flashcards with section filtering and shuffle
 - Exam center with two 65-question practice exams
 - Scoring and answer explanations after grading
@@ -21,6 +22,9 @@ An interactive Node.js study site for AWS Certified Solutions Architect - Associ
 | `/` | Study dashboard and architecture overview |
 | `/summary` | Summary hub with Sections 1-9 cards and rapid-fire exam traps |
 | `/section/1` - `/section/9` | Detailed section study pages |
+| `/visuals` | Interactive diagram hub |
+| `/visuals/failover` | Route 53 DNS failover vs ELB failover simulator and takeaways |
+| `/visuals/cost` | Reserved vs On-Demand capacity cost simulator and takeaways |
 | `/flashcards` | Flashcard drill mode with filtering and shuffle |
 | `/exam` | Exam center landing page |
 | `/exam/a` | Practice Exam A |
@@ -157,9 +161,10 @@ Recommended usage:
 
 1. Start at `/summary` to review the section map and rapid-fire exam traps.
 2. Use `/section/1` through `/section/9` for the detailed notes from the master summary document.
-3. Use `/flashcards` with section filters for repetition.
-4. Shuffle the flashcard deck for mixed recall.
-5. Take `/exam/a`, review explanations, then take `/exam/b`.
+3. Use `/visuals` to interact with the failover and cost-optimization diagrams.
+4. Use `/flashcards` with section filters for repetition.
+5. Shuffle the flashcard deck for mixed recall.
+6. Take `/exam/a`, review explanations, then take `/exam/b`.
 
 ## Exam Scope Reference
 

@@ -246,6 +246,49 @@ sectionMeta.forEach((section) => {
   section.cards.push(...(additionalFlashcards[section.id] || []));
 });
 
+const visualStudies = [
+  {
+    id: "failover",
+    title: "Route 53 vs ELB Failover",
+    subtitle: "DNS answers compared with active request proxying",
+    asset: "/assets/route53-vs-elb-failover-simulator.html",
+    sections: [6, 8, 9],
+    summary:
+      "This simulator contrasts DNS-based failover with load balancer failover. Route 53 can stop returning an unhealthy endpoint after health checks update DNS, but clients may keep using cached answers until TTL expires. An ELB sits in the request path and can route new traffic away from unhealthy targets as soon as its health checks mark them out of service.",
+    takeaways: [
+      "Route 53 routing policies choose DNS answers; they do not proxy traffic.",
+      "DNS failover is affected by health check timing and resolver/client TTL caching.",
+      "ELB health checks operate at the target group or load balancer layer and remove unhealthy targets from active routing.",
+      "Use Route 53 for DNS-level decisions such as regional failover; use ELB for application-tier target health and traffic distribution.",
+      "Exam trigger: stale DNS cache or users still hitting a dead IP points to TTL behavior, not ELB behavior."
+    ],
+    prompts: [
+      "Lower the Route 53 TTL, fail the primary, and watch how long failed traffic continues.",
+      "Fail an ELB node and compare how quickly new packets avoid the unhealthy backend."
+    ]
+  },
+  {
+    id: "cost",
+    title: "Reserved vs On-Demand Capacity",
+    subtitle: "Baseline commitments compared with burst capacity",
+    asset: "/assets/aws_cost_optimization_simulator.html",
+    sections: [3, 6, 9],
+    summary:
+      "This simulator models a 24-hour capacity curve and lets you choose how much baseline capacity to reserve. Reserved capacity is cheaper per hour but paid continuously, so it is strongest for predictable minimum usage. On-Demand capacity costs more per hour but fits variable spikes because you pay only when you need it.",
+    takeaways: [
+      "Reserve the steady baseline; avoid reserving the whole peak unless the peak is sustained and predictable.",
+      "On-Demand is appropriate for unpredictable or short-lived capacity above the baseline.",
+      "Over-reserving creates paid but unused capacity, which weakens the cost-optimization benefit.",
+      "For fault-tolerant burst work, Spot may be better than On-Demand, but not for critical databases or non-interruptible workloads.",
+      "Exam trigger: predictable steady-state usage points to Reserved Instances or Savings Plans; unpredictable spikes point to elastic capacity."
+    ],
+    prompts: [
+      "Set reserved capacity below, at, and above the baseline to see when waste appears.",
+      "Compare total daily cost when you reserve for baseline versus reserve for peak."
+    ]
+  }
+];
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -409,6 +452,7 @@ function renderHome() {
         <p>This site turns your Sections 1-9 master summary into a navigable study system: quick review, section deep dives, flip cards, visual references, and two 65-question practice exams.</p>
         <div class="hero-actions">
           ${link("/summary", "Open Summary")}
+          ${link("/visuals", "Study Visuals", "button secondary")}
           ${link("/flashcards", "Drill Flashcards", "button secondary")}
           ${link("/exam", "Go to Exams", "button secondary")}
         </div>
@@ -446,6 +490,7 @@ function renderHome() {
     </div>
     <div class="grid three">
       <div class="card stat"><span class="muted">Study sections</span><strong>9</strong><span>From global infrastructure through Beanstalk.</span></div>
+      <div class="card stat"><span class="muted">Visual simulators</span><strong>2</strong><span>Failover behavior and capacity cost planning.</span></div>
       <div class="card stat"><span class="muted">Flashcards</span><strong>${sectionMeta.reduce((sum, s) => sum + s.cards.length, 0)}</strong><span>Focused on exam traps and decision triggers.</span></div>
       <div class="card stat"><span class="muted">Practice exams</span><strong>130</strong><span>Two 65-question exams with review mode.</span></div>
     </div>
@@ -520,6 +565,88 @@ function renderSection(id) {
             </button>
           `).join("")}
         </div>
+      </aside>
+    </div>
+  `;
+}
+
+function visualCard(visual) {
+  return `
+    <article class="card visual-card">
+      <div>
+        <span class="tag">Interactive diagram</span>
+        <h3>${visual.title}</h3>
+        <p>${visual.subtitle}</p>
+      </div>
+      <p class="muted">${visual.summary}</p>
+      <div class="tags">
+        ${visual.sections.map((id) => `<span class="tag">Section ${id}</span>`).join("")}
+      </div>
+      <div class="button-row">
+        ${link(`/visuals/${visual.id}`, "Open Study View")}
+        <a class="button secondary" href="${visual.asset}" target="_blank" rel="noopener">Open Standalone</a>
+      </div>
+    </article>
+  `;
+}
+
+function renderVisuals() {
+  setTitle("Visuals");
+  app.innerHTML = `
+    <div class="toolbar">
+      <div>
+        <h2>Interactive AWS diagrams</h2>
+        <p class="muted">Use these simulators to turn architecture tradeoffs into something you can watch happen.</p>
+      </div>
+      ${link("/summary", "Back to Summary", "button secondary")}
+    </div>
+    <div class="grid two">
+      ${visualStudies.map(visualCard).join("")}
+    </div>
+  `;
+}
+
+function renderVisualDetail(id) {
+  const visual = visualStudies.find((item) => item.id === id) || visualStudies[0];
+  setTitle(visual.title);
+  app.innerHTML = `
+    <div class="toolbar">
+      <div>
+        <h2>${visual.title}</h2>
+        <p class="muted">${visual.subtitle}</p>
+      </div>
+      <div class="button-row">
+        ${link("/visuals", "All Visuals", "button secondary")}
+        <a class="button secondary" href="${visual.asset}" target="_blank" rel="noopener">Open Standalone</a>
+      </div>
+    </div>
+    <div class="visual-layout">
+      <section class="visual-frame-panel">
+        <iframe class="visual-frame" src="${visual.asset}" title="${visual.title}" sandbox="allow-scripts allow-same-origin"></iframe>
+      </section>
+      <aside class="visual-notes">
+        <article class="study-panel">
+          <h2>What This Shows</h2>
+          <p>${visual.summary}</p>
+        </article>
+        <article class="study-panel">
+          <h2>Important Takeaways</h2>
+          <ul class="takeaway-list">
+            ${visual.takeaways.map((takeaway) => `<li>${takeaway}</li>`).join("")}
+          </ul>
+        </article>
+        <article class="study-panel">
+          <h2>Try This</h2>
+          <ul class="takeaway-list">
+            ${visual.prompts.map((prompt) => `<li>${prompt}</li>`).join("")}
+          </ul>
+        </article>
+        <article class="study-panel">
+          <h2>Related Sections</h2>
+          <div class="tags">
+            ${visual.sections.map((sectionId) => `<a class="tag" href="/section/${sectionId}" data-link>Section ${sectionId}</a>`).join("")}
+          </div>
+        </article>
       </aside>
     </div>
   `;
@@ -788,6 +915,8 @@ function renderRoute() {
   const path = location.pathname;
   if (path === "/") renderHome();
   else if (path === "/summary") renderSummary();
+  else if (path === "/visuals") renderVisuals();
+  else if (path.startsWith("/visuals/")) renderVisualDetail(path.split("/").pop());
   else if (path.startsWith("/section/")) renderSection(Number(path.split("/").pop()));
   else if (path === "/flashcards") renderFlashcards();
   else if (path === "/exam") examIntro();
