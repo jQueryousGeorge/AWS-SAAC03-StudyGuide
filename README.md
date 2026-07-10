@@ -33,7 +33,7 @@ An interactive Node.js study site for AWS Certified Solutions Architect - Associ
 - CSS
 - Vanilla JavaScript
 
-No package dependencies are required.
+The current app does not rely on third-party runtime packages, but you should still run `npm install` during setup so npm can validate the project and create local install metadata if needed.
 
 ## Requirements
 
@@ -43,7 +43,20 @@ The app has been developed with Node.js `v26.5.0`, but it only uses standard Nod
 
 ## Getting Started
 
-Clone the repo, then start the local server:
+Clone the repo:
+
+```bash
+git clone <repo-url>
+cd AWS-Study-Website
+```
+
+Install the Node project requirements:
+
+```bash
+npm install
+```
+
+Start the local development server:
 
 ```bash
 npm run dev
