@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 Storage Class Picker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            padding: 1rem;
+        }
+        .sim-shell {
+            width: min(100%, 68rem);
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+        }
+        .hero {
+            text-align: center;
+        }
+        .hero h1 {
+            margin: 0 0 0.5rem;
+            color: #fff;
+            font-size: clamp(1.8rem, 4vw, 2.25rem);
+        }
+        .hero p {
+            margin: 0;
+            color: #94a3b8;
+        }
+        .panel {
+            display: flex;
+            gap: 2rem;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            background-color: #1e293b;
+            padding: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .controls {
+            display: flex;
+            flex: 1 1 40%;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-width: 280px;
+        }
+        .result-panel {
+            display: flex;
+            flex: 1 1 55%;
+            flex-direction: column;
+            min-width: 280px;
+        }
+        h2 {
+            margin: 0 0 0.75rem;
+            border-bottom: 1px solid #475569;
+            color: #34d399;
+            padding-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+        .description {
+            margin: 0 0 1rem;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .slider-group {
+            display: grid;
+            gap: 0.5rem;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .slider-label span.val {
+            color: #34d399;
+            font-weight: 700;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #10b981;
+        }
+        .scale-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+        }
+        .toggle-row input[type="checkbox"] {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: #10b981;
+        }
+        .toggle-row label {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        .duration-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .duration-row input[type="number"] {
+            width: 6rem;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.4rem;
+            color: #e2e8f0;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.9rem;
+        }
+        .duration-row span {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .result-card {
+            border: 1px solid #34d399;
+            border-radius: 0.6rem;
+            background-color: #0f172a;
+            padding: 1.25rem;
+            display: grid;
+            gap: 0.6rem;
+        }
+        .result-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .result-personality {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.6rem;
+            margin-top: 0.5rem;
+        }
+        .stat-box {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            padding: 0.6rem;
+            text-align: center;
+        }
+        .stat-box .label {
+            display: block;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .stat-box .value {
+            display: block;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #34d399;
+            margin-top: 0.15rem;
+        }
+        .trap {
+            margin-top: 0.75rem;
+            border-left: 3px solid #f59e0b;
+            background-color: rgba(245, 158, 11, 0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 0 0.4rem 0.4rem 0;
+            font-size: 0.85rem;
+            color: #fde68a;
+            line-height: 1.5;
+        }
+        .trap strong {
+            color: #fbbf24;
+        }
+        .ladder {
+            margin-top: 1.5rem;
+        }
+        .ladder-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.4rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .ladder-row.active {
+            background-color: rgba(52, 211, 153, 0.12);
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+        .ladder-row .dot {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            background-color: #334155;
+            flex-shrink: 0;
+        }
+        .ladder-row.active .dot {
+            background-color: #34d399;
+        }
+        .hint {
+            margin: 0.5rem 0 0;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sim-shell">
+        <div class="hero">
+            <h1>S3 Storage Class Picker</h1>
+            <p>Dial in access frequency, retrieval-wait tolerance, and resilience needs to see which S3 storage class the exam wants you to pick.</p>
+        </div>
+        <div class="panel">
+            <div class="controls">
+                <h2>Your Access Pattern</h2>
+                <p class="description">These four dials are the whole exam: cost, retrieval speed, resilience, and minimum duration.</p>
+
+                <div class="toggle-row">
+                    <input type="checkbox" id="unknownPattern">
+                    <label for="unknownPattern">Access pattern is unknown or keeps changing</label>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label"><span>Access frequency</span><span class="val" id="freqVal">Frequent</span></div>
+                    <input type="range" id="freqSlider" min="0" max="100" value="10">
+                    <div class="scale-ticks"><span>Constant</span><span>Occasional</span><span>Very rare</span></div>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label"><span>Retrieval wait tolerance</span><span class="val" id="waitVal">Milliseconds</span></div>
+                    <input type="range" id="waitSlider" min="0" max="100" value="5">
+                    <div class="scale-ticks"><span>Instant</span><span>Minutes-hours</span><span>Half-day+</span></div>
+                </div>
+
+                <div class="toggle-row">
+                    <input type="checkbox" id="recreatable">
+                    <label for="recreatable">Data is recreatable / a secondary copy (loss is tolerable)</label>
+                </div>
+
+                <div class="duration-row">
+                    <span>Planned storage duration:</span>
+                    <input type="number" id="durationDays" min="0" value="365">
+                    <span>days</span>
+                </div>
+            </div>
+
+            <div class="result-panel">
+                <h2>Recommendation</h2>
+                <div class="result-card">
+                    <div class="result-name" id="resultName">Standard</div>
+                    <div class="result-personality" id="resultPersonality"></div>
+                    <div class="stat-row">
+                        <div class="stat-box"><span class="label">Availability</span><span class="value" id="statAvailability"></span></div>
+                        <div class="stat-box"><span class="label">AZs</span><span class="value" id="statAZs"></span></div>
+                        <div class="stat-box"><span class="label">Min duration</span><span class="value" id="statDuration"></span></div>
+                        <div class="stat-box"><span class="label">Min billable size</span><span class="value" id="statSize"></span></div>
+                    </div>
+                    <div class="trap" id="trapBox" hidden></div>
+                </div>
+                <div class="ladder" id="ladder"></div>
+                <p class="hint">Durability is 11 nines for every class shown here — this tool never changes that. It only changes availability, retrieval speed, and cost.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CLASSES = [
+            { key: "standard", name: "Standard", availability: "99.99%", azs: "3+", duration: "None", size: "None",
+              personality: "Frequent access, no minimums. The default for active, hot data." },
+            { key: "intelligent", name: "Intelligent-Tiering", availability: "99.9%", azs: "3+", duration: "None", size: "None",
+              personality: "Unknown or shifting access patterns. Small monitoring fee, no retrieval charges, auto-moves objects between tiers for you." },
+            { key: "standard-ia", name: "Standard-IA", availability: "99.9%", azs: "3+", duration: "30 days", size: "128 KB",
+              personality: "Infrequent but still needs rapid access when it is touched. Disaster recovery, backups. Per-GB retrieval fee." },
+            { key: "one-zone-ia", name: "One Zone-IA", availability: "99.5%", azs: "1", duration: "30 days", size: "128 KB",
+              personality: "Same rapid access as Standard-IA, cheaper, but lives in a single AZ. Only for recreatable or secondary data." },
+            { key: "glacier-instant", name: "Glacier Instant Retrieval", availability: "99.9%", azs: "3+", duration: "90 days", size: "128 KB",
+              personality: "Millisecond retrieval on data touched about quarterly. The 'rare but urgent' tier." },
+            { key: "glacier-flexible", name: "Glacier Flexible Retrieval", availability: "99.99%", azs: "3+", duration: "90 days", size: "40 KB",
+              personality: "Can wait: Expedited 1-5 min, Standard 3-5 h, Bulk 5-12 h (free). Classic archive tier." },
+            { key: "glacier-deep", name: "Glacier Deep Archive", availability: "99.99%", azs: "3+", duration: "180 days", size: "40 KB",
+              personality: "Cheapest storage available. Standard retrieval 12 h, Bulk 48 h. For compliance archives measured in years." }
+        ];
+
+        const freqSlider = document.querySelector("#freqSlider");
+        const waitSlider = document.querySelector("#waitSlider");
+        const unknownPattern = document.querySelector("#unknownPattern");
+        const recreatable = document.querySelector("#recreatable");
+        const durationDays = document.querySelector("#durationDays");
+
+        function freqLabel(v) {
+            if (v < 15) return "Constant";
+            if (v < 40) return "Frequent";
+            if (v < 65) return "Occasional";
+            if (v < 85) return "Rare";
+            return "Very rare";
+        }
+        function waitLabel(v) {
+            if (v < 10) return "Milliseconds";
+            if (v < 35) return "Minutes";
+            if (v < 65) return "Hours";
+            if (v < 85) return "Half-day (12h)";
+            return "Two days (48h)";
+        }
+
+        function pickClass() {
+            const freq = Number(freqSlider.value);
+            const wait = Number(waitSlider.value);
+            const isUnknown = unknownPattern.checked;
+            const isRecreatable = recreatable.checked;
+
+            if (isUnknown) return "intelligent";
+            if (freq < 20) return "standard";
+            if (isRecreatable && freq >= 20) return "one-zone-ia";
+            if (freq < 65) {
+                return wait < 15 ? "standard-ia" : "glacier-instant";
+            }
+            if (wait < 15) return "glacier-instant";
+            if (wait < 65) return "glacier-flexible";
+            return "glacier-deep";
+        }
+
+        function trapsFor(cls, days) {
+            const traps = [];
+            if (cls.key === "one-zone-ia") {
+                traps.push("Exam trap: One Zone-IA still has 11 nines durability, but only <strong>within its single AZ</strong> — the data is gone if that AZ is destroyed.");
+            }
+            const minDurationMap = { "standard-ia": 30, "one-zone-ia": 30, "glacier-instant": 90, "glacier-flexible": 90, "glacier-deep": 180 };
+            const minDays = minDurationMap[cls.key];
+            if (minDays && days > 0 && days < minDays) {
+                traps.push(`Exam trap: this class bills a <strong>${minDays}-day minimum</strong>. Storing for only ${days} day(s) still incurs an early-deletion charge for the remaining minimum.`);
+            }
+            if (cls.key === "glacier-deep" && days > 0) {
+                traps.push("Remember: Deep Archive standard retrieval takes 12 hours, Bulk takes 48 hours — plan retrieval timing accordingly.");
+            }
+            if (cls.key === "glacier-flexible") {
+                traps.push("Remember: Expedited is 1-5 minutes, Standard is 3-5 hours, Bulk is 5-12 hours and free.");
+            }
+            return traps;
+        }
+
+        function render() {
+            freqSlider.parentElement.querySelector("#freqVal") ? null : null;
+            document.querySelector("#freqVal").textContent = freqLabel(Number(freqSlider.value));
+            document.querySelector("#waitVal").textContent = waitLabel(Number(waitSlider.value));
+
+            const key = pickClass();
+            const cls = CLASSES.find((c) => c.key === key);
+
+            document.querySelector("#resultName").textContent = cls.name;
+            document.querySelector("#resultPersonality").textContent = cls.personality;
+            document.querySelector("#statAvailability").textContent = cls.availability;
+            document.querySelector("#statAZs").textContent = cls.azs;
+            document.querySelector("#statDuration").textContent = cls.duration;
+            document.querySelector("#statSize").textContent = cls.size;
+
+            const traps = trapsFor(cls, Number(durationDays.value) || 0);
+            const trapBox = document.querySelector("#trapBox");
+            if (traps.length) {
+                trapBox.hidden = false;
+                trapBox.innerHTML = traps.map((t) => `<div>${t}</div>`).join("");
+            } else {
+                trapBox.hidden = true;
+                trapBox.innerHTML = "";
+            }
+
+            const ladder = document.querySelector("#ladder");
+            ladder.innerHTML = CLASSES.map((c) => `
+                <div class="ladder-row ${c.key === key ? "active" : ""}">
+                    <span class="dot"></span>
+                    <span>${c.name}</span>
+                </div>
+            `).join("");
+        }
+
+        [freqSlider, waitSlider, unknownPattern, recreatable, durationDays].forEach((el) => {
+            el.addEventListener("input", render);
+        });
+
+        render();
+    </script>
+</body>
+</html>

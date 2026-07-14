@@ -6,7 +6,7 @@ export function renderHome({ app, pageTitle, sectionMeta }) {
     <div class="hero">
       <div class="hero-copy">
         <h2>AWS architecture practice that feels like using a control room.</h2>
-        <p>This site turns your Sections 1-9 master summary into a navigable study system: quick review, section deep dives, flip cards, visual references, and two 65-question practice exams.</p>
+        <p>This site turns your Sections 1-13 master summaries into a navigable study system: quick review, section deep dives, flip cards, visual references, and two 93-question practice exams.</p>
         <div class="hero-actions">
           ${link("/summary", "Open Summary")}
           ${link("/visuals", "Study Visuals", "button secondary")}
@@ -46,10 +46,10 @@ export function renderHome({ app, pageTitle, sectionMeta }) {
       </div>
     </div>
     <div class="grid three">
-      <div class="card stat"><span class="muted">Study sections</span><strong>9</strong><span>From global infrastructure through Beanstalk.</span></div>
-      <div class="card stat"><span class="muted">Visual simulators</span><strong>2</strong><span>Failover behavior and capacity cost planning.</span></div>
+      <div class="card stat"><span class="muted">Study sections</span><strong>13</strong><span>From global infrastructure through CloudFront and Global Accelerator.</span></div>
+      <div class="card stat"><span class="muted">Visual simulators</span><strong>3</strong><span>Failover behavior, capacity cost planning, and S3 storage classes.</span></div>
       <div class="card stat"><span class="muted">Flashcards</span><strong>${sectionMeta.reduce((sum, s) => sum + s.cards.length, 0)}</strong><span>Focused on exam traps and decision triggers.</span></div>
-      <div class="card stat"><span class="muted">Practice exams</span><strong>130</strong><span>Two 65-question exams with review mode.</span></div>
+      <div class="card stat"><span class="muted">Practice exams</span><strong>186</strong><span>Two 93-question exams with review mode.</span></div>
     </div>
   `;
 }

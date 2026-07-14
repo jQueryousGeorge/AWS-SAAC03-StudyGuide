@@ -38,5 +38,26 @@ export const visualStudies = [
       "Set reserved capacity below, at, and above the baseline to see when waste appears.",
       "Compare total daily cost when you reserve for baseline versus reserve for peak."
     ]
+  },
+  {
+    id: "s3-storage-class",
+    title: "S3 Storage Class Picker",
+    subtitle: "Access frequency and retrieval-wait tolerance compared across the S3 storage class waterfall",
+    asset: "/assets/s3-storage-class-picker-simulator.html",
+    sections: [10, 11],
+    summary:
+      "This simulator turns the Section 10 storage-class table into a live decision tool. Dial in how often the data is touched, how long you can wait for a retrieval, and whether the data is recreatable, and it recommends a storage class the way the exam expects you to reason: durability never changes, but availability, retrieval speed, resilience (One Zone vs multi-AZ), and minimum storage duration all trade against each other.",
+    takeaways: [
+      "Durability (11 nines) is identical across every S3 storage class shown here; only availability, cost, and retrieval speed differ.",
+      "One Zone-IA trades multi-AZ resilience for a lower price — it is only a fit when the data can be recreated or is a secondary copy.",
+      "Minimum storage durations (30 days for IA classes, 90 for Glacier Instant/Flexible, 180 for Deep Archive) create early-deletion charges if data doesn't stay that long.",
+      "Intelligent-Tiering is the answer whenever the access pattern is unknown or keeps changing — it moves objects between tiers automatically with no retrieval fees.",
+      "Exam trigger: 'cheapest,' 'millisecond retrieval,' 'can be recreated,' and 'compliance archive for years' are the four dials every storage-class question is built from."
+    ],
+    prompts: [
+      "Set access frequency to 'very rare' and slide retrieval-wait tolerance from milliseconds up to two days to watch the recommendation move through the Glacier tiers.",
+      "Toggle 'recreatable / secondary copy' on and off at the same frequency setting to see when One Zone-IA becomes the answer instead of Standard-IA.",
+      "Set a short planned storage duration (e.g. 10 days) against a Glacier class to see the early-deletion minimum-duration trap fire."
+    ]
   }
 ];

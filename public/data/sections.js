@@ -124,6 +124,62 @@ export const sectionMeta = [
       ["Why does WordPress need EFS when scaled horizontally?", "Uploads on per-instance EBS (Elastic Block Store) disappear depending on which instance serves the request; EFS (Elastic File System) gives the fleet shared files."],
       ["What does Elastic Beanstalk wrap?", "EC2, ASG (Auto Scaling Groups), ELB (Elastic Load Balancing), optional RDS, deployment, health, and scaling workflows."]
     ]
+  },
+  {
+    id: 10,
+    title: "Amazon S3 (Fundamentals)",
+    short: "Buckets, objects, storage classes, durability vs availability",
+    tags: ["Storage classes", "Durability", "Versioning"],
+    focus: "Key to object store fundamentals: buckets, the security model, versioning, replication, and the cost, retrieval, and resilience tradeoffs across storage classes.",
+    cards: [
+      ["What's identical across every S3 storage class?", "Durability: 11 nines (99.999999999 percent) for all classes. Availability, cost, and retrieval speed are what differ."],
+      ["What is the S3 object key, really?", "The full path: prefix plus object name. There are no real directories; the console just fakes folders from slash-separated keys."],
+      ["What causes a 403 Forbidden on a static S3 website?", "The bucket policy doesn't allow public reads."],
+      ["What's required on both sides for Cross-Region or Same-Region Replication?", "Versioning enabled on both the source and destination buckets. Replication itself is asynchronous."],
+      ["Which storage class lives in only 1 AZ and is lost if that AZ dies?", "One Zone-IA, or Infrequent Access. Still 11 nines durability within that one Availability Zone, but gone if the AZ is destroyed."]
+    ]
+  },
+  {
+    id: 11,
+    title: "S3 Advanced",
+    short: "Lifecycle rules, event notifications, performance, Batch Operations, Storage Lens",
+    tags: ["Lifecycle", "EventBridge", "Performance"],
+    focus: "S3 as a machine: automatically moving data down the class waterfall, reacting to events, and squeezing performance out of prefixes and parallelism.",
+    cards: [
+      ["What are the two lifecycle rule action types?", "Transition actions move objects to a cheaper class after N days. Expiration actions delete after N days, including old versions and incomplete multi-part uploads."],
+      ["What does S3 Storage Class Analysis recommend transitions for?", "Standard and Standard-IA only, not One Zone-IA or Glacier. It's the good first step before writing lifecycle rules."],
+      ["What is the S3 request-rate limit to memorize?", "3,500 PUT, COPY, POST, DELETE and 5,500 GET, HEAD requests per second PER PREFIX, with no limit on the number of prefixes."],
+      ["When should you reach for EventBridge instead of plain S3 Event Notifications?", "When you need advanced JSON-rule filtering, many destinations (18-plus), or archive and replay. Plain notifications only go to SNS, SQS, or Lambda."],
+      ["What is the S3 Batch Operations pipeline for bulk processing existing objects?", "S3 Inventory produces the object list, Athena filters it, then Batch Operations processes it: encrypt unencrypted objects, copy, or restore from Glacier."]
+    ]
+  },
+  {
+    id: 12,
+    title: "S3 Security",
+    short: "Encryption methods, CORS, MFA Delete, Object Lock, Access Points",
+    tags: ["Encryption", "Object Lock", "Access Points"],
+    focus: "Four encryption methods answering who holds the key and where encryption happens, plus a toolbox of guardrails: WORM locks, MFA delete, pre-signed URLs, and access points.",
+    cards: [
+      ["SSE-S3 vs SSE-KMS vs SSE-C vs Client-Side, what's the one-line distinguisher?", "Who manages the key and where encryption happens: SSE-S3 uses AWS keys server-side (default). SSE-KMS uses your KMS keys server-side with CloudTrail audit. SSE-C uses your keys, encrypted server-side but never stored. Client-Side means you encrypt before upload."],
+      ["What is the SSE-KMS trap at high request rates?", "Every upload calls GenerateDataKey and every download calls Decrypt, both counting against KMS API quotas (5,500, 10,000, or 30,000 requests per second by region), so hot buckets can throttle."],
+      ["Compliance mode vs Governance mode in S3 Object Lock?", "Compliance mode: no one, not even root, can overwrite, delete, or shorten retention. Governance mode: privileged users with special permissions can."],
+      ["What do pre-signed URLs inherit?", "The permissions of the user who generated them, for GET or PUT. CLI max expiration is about 168 hours (604,800 seconds)."],
+      ["What is the 3-policy chain for a VPC-origin S3 Access Point?", "Endpoint policy, then access point policy, then bucket policy. All three must allow the request."]
+    ]
+  },
+  {
+    id: 13,
+    title: "CloudFront & Global Accelerator",
+    short: "Edge caching vs edge proxying, origins, geo-restriction, invalidations",
+    tags: ["CDN", "Anycast", "Edge network"],
+    focus: "Both ride AWS's edge network but do opposite jobs: CloudFront caches content at the edge; Global Accelerator proxies packets to your app over AWS's private backbone.",
+    cards: [
+      ["CloudFront vs Global Accelerator, one-line distinguisher?", "CloudFront CACHES content at the edge, a CDN for reads. Global Accelerator PROXIES packets from the edge to your app, no caching, using 2 anycast IPs."],
+      ["How do you secure an S3 origin so only CloudFront can read it?", "Origin Access Control (OAC) plus a bucket policy restricting reads to CloudFront."],
+      ["What's the CloudFront vs S3 Cross-Region Replication distinguisher?", "CloudFront: global edge network, cached for a TTL, for static content needed everywhere. S3 CRR: per-region setup, near-real-time, read-only, for dynamic content at low latency in a few regions."],
+      ["How does CloudFront learn the origin changed?", "It doesn't, until the TTL expires, unless you force a cache invalidation on /* or a specific path."],
+      ["What does Global Accelerator give you, and what problem does it solve?", "2 anycast IPs; traffic enters the nearest edge location then rides AWS's internal network to your app, solving the many-public-internet-hops latency problem, with health-check failover under 1 minute."]
+    ]
   }
 ];
 
@@ -220,6 +276,48 @@ const additionalFlashcards = {
     ["What is the pilot light DR strategy?", "Keep minimal core infrastructure running in another Region and scale it up during disaster."],
     ["What is warm standby DR?", "Keep a scaled-down functional environment running in another Region and scale it during failover."],
     ["What is active-active DR?", "Run production traffic in multiple locations at the same time."]
+  ],
+  10: [
+    ["What changed about S3's max object size at re:Invent Dec 2025?", "Raised 10x from 5 TB to 50 TB. Older practice material may still say 5 TB."],
+    ["At what upload size is multi-part upload required?", "Uploads over 5 GB MUST use multi-part upload."],
+    ["What's the rule for accessing an S3 object across IAM and bucket policy?", "IAM permissions allow it, or the resource (bucket) policy allows it, and there is no explicit Deny."],
+    ["What happens to objects that existed before versioning was enabled?", "They get version ID 'null'."],
+    ["Does suspending versioning delete old versions?", "No. Suspending versioning does not delete previously created versions."],
+    ["Which objects replicate under CRR or SRR after you turn it on?", "Only new objects. Use S3 Batch Replication to backfill existing or failed objects."],
+    ["Do versioned deletes replicate?", "Delete markers can optionally replicate, but deletes with a specific version ID never do. That's the anti-malicious-delete protection."],
+    ["Can replication chain from bucket 1 to 2 to 3?", "No. Replicating 1 to 2 and 2 to 3 does not give you 1 to 3."],
+    ["How many tags can an S3 object carry?", "Up to 10, used for security and lifecycle rules."]
+  ],
+  11: [
+    ["Who pays for what under Requester Pays?", "The requester pays the networking and download; the owner still pays storage. The requester must be authenticated, never anonymous."],
+    ["What's the thumbnail lifecycle scenario?", "Source images go Standard to Glacier after 60 days. Thumbnails, being recreatable, go to One Zone-IA and expire after 60 days."],
+    ["What's the 30-day / 48-hour delete-recovery scenario?", "Enable Versioning so deletes become delete markers, then transition noncurrent versions to Standard-IA and then Glacier Deep Archive, where 48-hour retrieval means Deep Archive Bulk."],
+    ["What's the multi-part upload guidance?", "Recommended over 100 MB, required over 5 GB. It parallelizes uploads."],
+    ["What does S3 Transfer Acceleration do?", "Uploads go to the nearest edge location, then ride AWS's private network to the target-region bucket. Compatible with multi-part upload."],
+    ["What are Byte-Range Fetches used for?", "Parallelizing GETs by byte range for faster downloads, failure resilience, or fetching just the head of a file."],
+    ["What's the free vs paid split for S3 Storage Lens?", "Free gives about 28 usage metrics and 14-day queries. Advanced adds activity, status-code, and cost and protection metrics, CloudWatch publishing, prefix-level aggregation, and 15-month retention."],
+    ["How can you scope a lifecycle rule?", "By prefix, such as s3://bucket/mp3/*, or by object tags, such as Department: Finance."]
+  ],
+  12: [
+    ["What does forcing TLS on a bucket policy do?", "Denies requests where aws:SecureTransport equals false, forcing HTTPS."],
+    ["When are bucket policies evaluated relative to default encryption?", "Bucket policies are evaluated BEFORE default encryption, so a policy can require encryption headers on PUT even with SSE-S3 as the default."],
+    ["What's the CORS trigger phrase?", "A static site on bucket A pulling assets from bucket B needs CORS headers on bucket B allowing bucket A's origin."],
+    ["What does MFA Delete require, and who can enable or disable it?", "Requires Versioning enabled. Only the bucket owner, the root account, can enable or disable it."],
+    ["When is MFA required vs not required under MFA Delete?", "Required for permanently deleting an object version and for suspending versioning. Not required for enabling versioning or listing deleted versions."],
+    ["Where must S3 access logs be delivered, and what's the classic mistake?", "Into another bucket in the SAME region. Never point a logging bucket at itself, since that creates an infinite logging loop."],
+    ["Glacier Vault Lock vs S3 Object Lock?", "Vault Lock: attach and lock a Vault Lock Policy that can never be changed or deleted, for compliance archives. Object Lock, which needs Versioning, blocks version deletion for a time via Compliance or Governance mode."],
+    ["What is a Legal Hold, and how does it differ from a retention period?", "It's indefinite and independent of the retention period, toggled via the s3:PutObjectLegalHold permission."],
+    ["What does S3 Object Lambda do?", "Transforms an object on retrieval, in-flight, on top of an access point: redacting PII, converting XML to JSON, or resizing and watermarking per caller."]
+  ],
+  13: [
+    ["What are the three CloudFront origin types?", "An S3 bucket secured with OAC plus a bucket policy, a VPC Origin for a private ALB, NLB, or EC2 with no internet exposure, and a Custom HTTP origin such as an S3 website endpoint or any public HTTP backend."],
+    ["What's the pre-VPC-origins pattern for a public ALB behind CloudFront?", "Make the ALB or EC2 public but restrict its security group to CloudFront's published edge IP ranges."],
+    ["What is Geo Restriction used for?", "An allowlist or blocklist of countries resolved by a 3rd-party Geo-IP database. Classic use case: copyright licensing."],
+    ["Unicast IP vs Anycast IP?", "Unicast is one server, one IP. Anycast means many endpoints share the same IP, and clients route to the nearest one."],
+    ["Which AWS resources can Global Accelerator front?", "Elastic IP, EC2, ALB, and NLB, public or private."],
+    ["What's Global Accelerator's client-cache advantage over DNS-based failover?", "No client-cache problems, since the 2 anycast IPs never change, unlike DNS records that resolvers cache until TTL expires."],
+    ["When is Global Accelerator the answer over CloudFront?", "For non-HTTP TCP/UDP apps like gaming, IoT/MQTT, or VoIP, or for HTTP needing static IPs or deterministic fast regional failover."],
+    ["What do CloudFront and Global Accelerator share?", "Both ride the AWS global edge network and both integrate with Shield for DDoS protection."]
   ]
 };
 

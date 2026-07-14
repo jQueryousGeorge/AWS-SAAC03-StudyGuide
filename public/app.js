@@ -17,9 +17,11 @@ const sidebarReopen = document.querySelector("#sidebarReopen");
 const collapsedPageTitle = document.querySelector("#collapsedPageTitle");
 
 const contentPath = "/content/aws-saa-sections-1-9-master-summary.md";
+const contentPathExtra = "/content/aws-saa-sections-10-13-master-summary.md";
 
 const state = {
   markdown: "",
+  markdownExtra: "",
   sections: [],
   answers: {},
   graded: false,
@@ -102,16 +104,20 @@ window.addEventListener("popstate", renderRoute);
 
 setSidebarCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
 
-fetch(contentPath)
-  .then((response) => response.text())
-  .then((markdown) => {
+Promise.all([
+  fetch(contentPath).then((response) => response.text()),
+  fetch(contentPathExtra).then((response) => response.text())
+])
+  .then(([markdown, markdownExtra]) => {
     state.markdown = markdown;
-    state.sections = parseSections(markdown);
+    state.markdownExtra = markdownExtra;
+    state.sections = [...parseSections(markdown), ...parseSections(markdownExtra)];
     buildNav();
     renderRoute();
   })
   .catch(() => {
     state.markdown = "";
+    state.markdownExtra = "";
     state.sections = [];
     buildNav();
     app.innerHTML = "<p>Could not load the study summary.</p>";

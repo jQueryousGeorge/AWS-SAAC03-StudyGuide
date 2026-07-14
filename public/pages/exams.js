@@ -7,13 +7,13 @@ export function examIntro({ app, pageTitle }) {
     <div class="toolbar">
       <div>
         <h2>Practice exams</h2>
-        <p class="muted">Each exam has 65 questions, four choices, scoring, and explanations.</p>
+        <p class="muted">Each exam has 93 questions, four choices, scoring, and explanations.</p>
       </div>
     </div>
     <div class="grid two">
       <article class="card">
         <h3>Exam A</h3>
-        <p>Balanced review across Sections 1-9 with emphasis on core service selection and exam traps.</p>
+        <p>Balanced review across Sections 1-13 with emphasis on core service selection and exam traps.</p>
         ${link("/exam/a", "Start Exam A")}
       </article>
       <article class="card">

@@ -1,14 +1,19 @@
 import { link, setTitle } from "../lib/render.js";
 import { markdownToHtml } from "../lib/markdown.js";
 
+function trapsBlock(markdown) {
+  const trapsStart = markdown.indexOf("## The Cross-Section Exam Traps");
+  return trapsStart >= 0 ? markdown.slice(trapsStart).trim() : "";
+}
+
 export function renderSummary({ app, pageTitle, state, sectionMeta }) {
   setTitle(pageTitle, "Master Summary");
-  const trapsStart = state.markdown.indexOf("## The Cross-Section Exam Traps");
-  const traps = trapsStart >= 0 ? state.markdown.slice(trapsStart).trim() : "";
+  const traps = trapsBlock(state.markdown);
+  const trapsExtra = trapsBlock(state.markdownExtra);
   app.innerHTML = `
     <div class="toolbar">
       <div>
-        <h2>Sections 1-9 at a glance</h2>
+        <h2>Sections 1-13 at a glance</h2>
         <p class="muted">Use this page to choose a weak area, then jump into a section page for details and cards.</p>
       </div>
       ${link("/exam", "Practice Exam", "button secondary")}
@@ -27,6 +32,9 @@ export function renderSummary({ app, pageTitle, state, sectionMeta }) {
     </div>
     <div class="study-panel" style="margin-top:18px">
       <div class="markdown">${markdownToHtml(traps)}</div>
+    </div>
+    <div class="study-panel" style="margin-top:18px">
+      <div class="markdown">${markdownToHtml(trapsExtra)}</div>
     </div>
     <div class="asset-strip" aria-label="Reference images">
       <a class="asset-card" href="/assets/iam-roles-entity-types.png" target="_blank" rel="noopener">
